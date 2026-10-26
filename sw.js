@@ -1,5 +1,5 @@
 // Caches the whole game so it works offline. Bump CACHE when you change any file.
-const CACHE = 'minesweeper-v1';
+const CACHE = 'minesweeper-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
