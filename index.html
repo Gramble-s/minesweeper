@@ -14,27 +14,26 @@
 <title>Minesweeper</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: a classic 90s desktop window filling the phone. Title bar, sunken LED/face panel,
-   level buttons, a sunken pinch-zoomable minefield, a status bar and the flag toggle.
-   Deliberately single-theme: the classic grey look in both light and dark mode. */
+/* Layout: a desktop-style window filling the phone (or docked to the lower part of the screen).
+   Title bar with appearance + options buttons, LED/face panel, level buttons, a pinch-zoomable
+   field, status bar with Recover, and flag / move-down buttons at the thumb.
+   Three skins (Classic grey bevels, Glass blue, Grass checkerboard), each with light and dark
+   palettes, switched with data-skin / data-dark on the root element. */
 :root {
-  --desk: #008080;        /* desktop teal */
-  --face: #c0c0c0;        /* window grey */
-  --hi: #ffffff;          /* bevel highlight */
-  --lo: #808080;          /* bevel shadow */
-  --dk: #000000;          /* outer shadow, text */
-  --title-a: #000080;
-  --title-b: #1084d0;
-  --title-fg: #ffffff;
-  --led-on: #ff0000;
-  --led-off: #3a0000;
-  --led-bg: #000000;
-  --boom: #ff0000;
-  --smiley: #ffff00;
+  /* Classic, light */
+  --desk: #008080; --win: #c0c0c0; --fg: #000000; --muted: #404040;
+  --hi: #ffffff; --lo: #808080; --dk: #000000; --soft: #dfdfdf;
+  --title-a: #000080; --title-b: #1084d0; --title-fg: #ffffff;
+  --tile: #c0c0c0; --tile2: #c0c0c0; --tile-hi: #ffffff;
+  --open: #c0c0c0; --open2: #c0c0c0; --line: #808080;
+  --btn: #c0c0c0; --btn-press: #b4b4b4;
+  --led-bg: #000000; --led-on: #ff0000; --led-off: #3a0000;
+  --boom: #ff0000; --smiley: #ffff00; --accent: #000080;
   --n1: #0000ff; --n2: #008000; --n3: #ff0000; --n4: #000080;
   --n5: #800000; --n6: #008080; --n7: #000000; --n8: #808080;
   --ui: Tahoma, Verdana, "Segoe UI", system-ui, sans-serif;
   --num: Verdana, Tahoma, Arial, sans-serif;
+  --gap: 33%;
   color-scheme: light;
   height: 100%;
   padding-top: env(safe-area-inset-top, 0px);
@@ -42,9 +41,76 @@
   box-sizing: border-box;
   background: var(--desk);
 }
+:root[data-skin="classic"][data-dark="1"] {
+  --desk: #0d3b3b; --win: #3b3d40; --fg: #e6e6e6; --muted: #b0b0b0;
+  --hi: #5e6166; --lo: #202224; --dk: #0a0a0a; --soft: #4a4c50;
+  --title-a: #1a1f5c; --title-b: #2b5d8f; --title-fg: #f0f0f0;
+  --tile: #4a4d52; --tile2: #4a4d52; --tile-hi: #6a6d72;
+  --open: #2e3033; --open2: #2e3033; --line: #1c1d1f;
+  --btn: #3b3d40; --btn-press: #333538;
+  --led-bg: #000000; --led-on: #ff3b30; --led-off: #2a0000;
+  --boom: #c0281e; --smiley: #f2d600; --accent: #8fb4ff;
+  --n1: #6d8bff; --n2: #45c445; --n3: #ff5c52; --n4: #a0a0ff;
+  --n5: #e07a6a; --n6: #3fcaca; --n7: #e6e6e6; --n8: #9a9a9a;
+  color-scheme: dark;
+}
+:root[data-skin="glass"] {
+  --desk: #2a6fbf; --win: #e9f0f9; --fg: #14213a; --muted: #4f6283;
+  --hi: #ffffff; --lo: #8ea6c6; --dk: #33496b; --soft: #ffffff;
+  --title-a: #a9c8ec; --title-b: #d9e8f8; --title-fg: #14213a;
+  --tile: #2f6bc7; --tile2: #2f6bc7; --tile-hi: #8ab8f2;
+  --open: #dbe5f2; --open2: #dbe5f2; --line: #b6c6dc;
+  --btn: #e3ecf7; --btn-press: #c9daf0;
+  --led-bg: #0f1c33; --led-on: #63c7ff; --led-off: #13314a;
+  --boom: #e8473b; --smiley: #ffd84a; --accent: #1f5fbf;
+  --n1: #2d45c2; --n2: #1f7a1f; --n3: #b8211c; --n4: #1b2a8a;
+  --n5: #7b1712; --n6: #127c7c; --n7: #111111; --n8: #5e6670;
+  color-scheme: light;
+}
+:root[data-skin="glass"][data-dark="1"] {
+  --desk: #0c1d36; --win: #1a2436; --fg: #dfe8f6; --muted: #93a6c4;
+  --hi: #3a4c69; --lo: #0b121e; --dk: #070b12; --soft: #2a3954;
+  --title-a: #22385c; --title-b: #2f4c7a; --title-fg: #e6eefb;
+  --tile: #1e4c94; --tile2: #1e4c94; --tile-hi: #4f86d6;
+  --open: #222d40; --open2: #222d40; --line: #33425c;
+  --btn: #26344d; --btn-press: #1d2a40;
+  --led-bg: #050a12; --led-on: #63c7ff; --led-off: #0f2236;
+  --boom: #b8352b; --smiley: #f2c94c; --accent: #79a8ff;
+  --n1: #7d96ff; --n2: #55c46a; --n3: #ff6b60; --n4: #a7b0ff;
+  --n5: #e48b6e; --n6: #4dd0d0; --n7: #e6eefb; --n8: #9aa6b6;
+  color-scheme: dark;
+}
+:root[data-skin="grass"] {
+  --desk: #4a752c; --win: #578a34; --fg: #ffffff; --muted: #e3f0d4;
+  --hi: #6fa043; --lo: #3d6624; --dk: #2f4f1c; --soft: #6fa043;
+  --title-a: #4a752c; --title-b: #4a752c; --title-fg: #ffffff;
+  --tile: #aad751; --tile2: #a2d149; --tile-hi: #bfe17d;
+  --open: #e5c29f; --open2: #d7b899; --line: #c9a882;
+  --btn: #6b9d40; --btn-press: #5b8a33;
+  --led-bg: #2f4f1c; --led-on: #ffffff; --led-off: #3f6428;
+  --boom: #db3236; --smiley: #ffd54f; --accent: #ffffff;
+  --n1: #1976d2; --n2: #388e3c; --n3: #d32f2f; --n4: #7b1fa2;
+  --n5: #ff8f00; --n6: #0097a7; --n7: #424242; --n8: #757575;
+  color-scheme: light;
+}
+:root[data-skin="grass"][data-dark="1"] {
+  --desk: #1b2c11; --win: #243a17; --fg: #e8f2dd; --muted: #a9c492;
+  --hi: #34531f; --lo: #142010; --dk: #0e170a; --soft: #34531f;
+  --title-a: #1b2c11; --title-b: #1b2c11; --title-fg: #e8f2dd;
+  --tile: #4f7a2a; --tile2: #487226; --tile-hi: #63923a;
+  --open: #4d3f31; --open2: #46392c; --line: #3a2f24;
+  --btn: #34531f; --btn-press: #2b461a;
+  --led-bg: #0e170a; --led-on: #d8f0c0; --led-off: #22351a;
+  --boom: #a8282b; --smiley: #e6c040; --accent: #c8e6a8;
+  --n1: #64a8f0; --n2: #6cc070; --n3: #ff6b66; --n4: #c48ae0;
+  --n5: #ffb04d; --n6: #3fc6d6; --n7: #e0e0e0; --n8: #a0a0a0;
+  color-scheme: dark;
+}
+
 html, body { height: 100%; margin: 0; }
+[hidden] { display: none !important; }
 body {
-  background: var(--desk); color: var(--dk);
+  background: var(--desk); color: var(--fg);
   font: 13px/1.2 var(--ui);
   -webkit-user-select: none; user-select: none;
   -webkit-touch-callout: none;
@@ -57,16 +123,20 @@ body {
   padding-block: 10px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  display: flex; justify-content: center;
+  display: flex; flex-direction: column; align-items: center;
 }
+.desk.lowered .window { height: calc(100% - var(--gap)); margin-top: auto; }
+/* Docked: drop the level row so the board keeps as much room as possible. */
+.desk.lowered .levels { display: none; }
+.desk.lowered .body { gap: 6px; }
 
-/* Bevels */
-.raised  { border: 2px solid; border-color: var(--hi) var(--lo) var(--lo) var(--hi); }
-.sunken  { border: 2px solid; border-color: var(--lo) var(--hi) var(--hi) var(--lo); }
+/* ===== Classic (base styles) ===== */
+.raised { border: 2px solid; border-color: var(--hi) var(--lo) var(--lo) var(--hi); }
+.sunken { border: 2px solid; border-color: var(--lo) var(--hi) var(--hi) var(--lo); }
 .window {
   width: 100%; max-width: 560px; height: 100%; box-sizing: border-box;
-  background: var(--face);
-  border: 2px solid; border-color: var(--face) var(--dk) var(--dk) var(--face);
+  background: var(--win); color: var(--fg);
+  border: 2px solid; border-color: var(--win) var(--dk) var(--dk) var(--win);
   box-shadow: inset 1px 1px 0 var(--hi), inset -1px -1px 0 var(--lo);
   padding: 3px;
   display: flex; flex-direction: column; gap: 6px;
@@ -74,23 +144,23 @@ body {
 .titlebar {
   background: linear-gradient(90deg, var(--title-a), var(--title-b));
   color: var(--title-fg); font-weight: 700; font-size: 14px;
-  padding: 4px 6px; display: flex; align-items: center; gap: 6px;
+  padding: 3px 3px 3px 6px; display: flex; align-items: center; gap: 6px; min-height: 26px;
 }
-.titlebar svg { width: 16px; height: 16px; flex: none; }
+.titlebar .ti { width: 16px; height: 16px; flex: none; display: flex; }
+.titlebar .ti svg { width: 16px; height: 16px; }
+.titlebar .tt { flex: 1; }
+.tbtn {
+  width: 28px; height: 24px; padding: 0; font-size: 14px; line-height: 1;
+  display: grid; place-items: center;
+}
 .body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 4px 6px 6px; }
 
-.panel {
-  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
-  padding: 6px 8px;
-}
-.led {
-  justify-self: start; display: flex; background: var(--led-bg);
-  padding: 2px; gap: 1px;
-}
+.panel { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 6px 8px; }
+.led { justify-self: start; display: flex; background: var(--led-bg); padding: 2px; gap: 1px; }
 .led.right { justify-self: end; }
 .led svg { width: 19px; height: 34px; display: block; }
 .facebtn {
-  width: 46px; height: 46px; padding: 0; background: var(--face); cursor: pointer;
+  width: 46px; height: 46px; padding: 0; background: var(--btn); cursor: pointer;
   border: 2px solid; border-color: var(--hi) var(--lo) var(--lo) var(--hi);
   box-shadow: 0 0 0 1px var(--lo);
   display: grid; place-items: center;
@@ -100,31 +170,27 @@ body {
 
 .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .btn {
-  font: 13px/1.15 var(--ui); color: var(--dk); background: var(--face);
+  font: 13px/1.15 var(--ui); color: var(--fg); background: var(--btn);
   border: 2px solid; border-color: var(--hi) var(--dk) var(--dk) var(--hi);
-  box-shadow: inset -1px -1px 0 var(--lo), inset 1px 1px 0 #dfdfdf;
+  box-shadow: inset -1px -1px 0 var(--lo), inset 1px 1px 0 var(--soft);
   padding: 6px 4px 5px; cursor: pointer;
 }
-.btn small { display: block; font-size: 11px; color: #404040; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.btn small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .btn[aria-pressed="true"], .btn:active {
   border-color: var(--dk) var(--hi) var(--hi) var(--dk);
-  box-shadow: inset 1px 1px 0 var(--lo), inset -1px -1px 0 #dfdfdf;
-  background: repeating-conic-gradient(var(--face) 0 25%, #d8d8d8 0 50%) 0 0 / 2px 2px;
+  box-shadow: inset 1px 1px 0 var(--lo), inset -1px -1px 0 var(--soft);
+  background: var(--btn-press);
 }
 .btn[aria-pressed="true"] { font-weight: 700; }
-.btn:focus-visible, .facebtn:focus-visible { outline: 1px dotted var(--dk); outline-offset: -5px; }
+.btn:focus-visible, .facebtn:focus-visible { outline: 1px dotted var(--fg); outline-offset: -5px; }
 
-.viewport {
-  position: relative; flex: 1; min-height: 0;
-  overflow: hidden; touch-action: none;
-}
+.viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; }
 .grid {
   position: absolute; left: 0; top: 0;
   display: grid; transform-origin: 0 0;
   grid-auto-rows: var(--cell);
-  background: var(--face);
-  /* sunken frame drawn outside the box so it never shifts the cells */
-  box-shadow: -3px -3px 0 var(--lo), 3px 3px 0 var(--hi), -3px 3px 0 var(--face), 3px -3px 0 var(--face);
+  background: var(--open);
+  box-shadow: -3px -3px 0 var(--lo), 3px 3px 0 var(--hi), -3px 3px 0 var(--win), 3px -3px 0 var(--win);
   will-change: transform;
 }
 .c {
@@ -134,32 +200,100 @@ body {
 }
 .c svg { width: 72%; height: 72%; display: block; }
 .c.h {
-  background: var(--face);
+  background: var(--tile);
   border: max(2px, calc(var(--cell) * 0.12)) solid;
-  border-color: var(--hi) var(--lo) var(--lo) var(--hi);
+  border-color: var(--tile-hi) var(--lo) var(--lo) var(--tile-hi);
 }
-.c.o, .c.p {
-  background: var(--face);
-  border-top: 1px solid var(--lo); border-left: 1px solid var(--lo);
-}
-.c.x { background: var(--boom); }
+.c.o, .c.p { background: var(--open); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+.c.x { background: var(--boom) !important; }
 .n1 { color: var(--n1) } .n2 { color: var(--n2) } .n3 { color: var(--n3) } .n4 { color: var(--n4) }
 .n5 { color: var(--n5) } .n6 { color: var(--n6) } .n7 { color: var(--n7) } .n8 { color: var(--n8) }
 
 .unzoom { position: absolute; top: 6px; right: 6px; width: 40px; height: 40px; padding: 0; font-size: 18px; }
 
-.statusbar { display: flex; gap: 4px; }
-.statusbar div { flex: 1; padding: 4px 6px; min-height: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.flag { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; font-size: 15px; }
-.flag svg { width: 20px; height: 20px; }
+.statusbar { display: flex; gap: 6px; align-items: stretch; }
+.statusbar .st { flex: 1; min-width: 0; padding: 4px 6px; min-height: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
+.statusbar .rec { flex: none; font-weight: 700; padding: 4px 12px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.actions .btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 6px; font-size: 15px; }
+.actions .btn svg { width: 20px; height: 20px; flex: none; }
+
+/* Options sheet */
+.sheet-bg {
+  position: fixed; inset: 0; z-index: 20;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 16px) max(16px, env(safe-area-inset-left, 0px));
+}
+.sheet-bg .window { height: auto; max-height: 100%; max-width: 420px; }
+.sheet-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+.opt-label { font-weight: 700; margin-bottom: 6px; }
+.opt-hint { color: var(--muted); font-size: 12px; margin-top: 5px; line-height: 1.35; }
+.row { display: grid; gap: 6px; grid-template-columns: repeat(var(--n, 3), 1fr); }
+.row .btn { padding: 8px 4px; }
+.swatch { display: flex; height: 18px; margin: 0 auto 5px; width: 54px; }
+.swatch i { flex: 1; }
+.stepper { display: grid; grid-template-columns: 44px 1fr 44px; gap: 6px; margin-top: 6px; align-items: stretch; }
+.stepper .val { display: grid; place-items: center; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.done { padding: 10px; font-size: 15px; font-weight: 700; }
+
+/* ===== Glass skin ===== */
+[data-skin="glass"] .window {
+  border: 1px solid var(--lo); border-radius: 10px; padding: 0; overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,.28), inset 0 1px 0 var(--soft);
+}
+[data-skin="glass"] .titlebar { padding: 6px 6px 6px 10px; border-bottom: 1px solid var(--lo); }
+[data-skin="glass"] .raised, [data-skin="glass"] .sunken { border: 1px solid var(--line); border-radius: 8px; }
+[data-skin="glass"] .led { border-radius: 6px; padding: 3px 4px; border: 0; }
+[data-skin="glass"] .btn, [data-skin="glass"] .facebtn {
+  border: 1px solid var(--lo); border-radius: 8px;
+  background: linear-gradient(var(--soft), var(--btn));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+}
+[data-skin="glass"] .btn[aria-pressed="true"], [data-skin="glass"] .btn:active, [data-skin="glass"] .facebtn:active {
+  background: var(--btn-press); border-color: var(--accent); box-shadow: inset 0 1px 3px rgba(0,0,0,.2);
+}
+[data-skin="glass"] .grid { box-shadow: 0 0 0 2px var(--line); border-radius: 4px; }
+[data-skin="glass"] .c.h {
+  border: max(1px, calc(var(--cell) * 0.05)) solid var(--open);
+  border-radius: calc(var(--cell) * 0.18);
+  background: linear-gradient(160deg, var(--tile-hi), var(--tile) 70%);
+  box-shadow: inset 0 calc(var(--cell) * 0.06) 0 rgba(255,255,255,.28);
+}
+[data-skin="glass"] .c.o, [data-skin="glass"] .c.p { border: 0; box-shadow: inset 0 0 0 0.5px var(--line); }
+
+/* ===== Grass skin ===== */
+[data-skin="grass"] .window { border: 0; border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+[data-skin="grass"] .titlebar { padding: 6px 6px 6px 12px; }
+[data-skin="grass"] .raised, [data-skin="grass"] .sunken { border: 0; border-radius: 8px; background: var(--lo); }
+[data-skin="grass"] .led { border-radius: 6px; padding: 3px 5px; }
+[data-skin="grass"] .btn, [data-skin="grass"] .facebtn {
+  border: 0; border-radius: 9px; background: var(--btn); color: var(--fg);
+  box-shadow: 0 3px 0 var(--lo);
+}
+[data-skin="grass"] .btn[aria-pressed="true"], [data-skin="grass"] .btn:active, [data-skin="grass"] .facebtn:active {
+  background: var(--btn-press); box-shadow: inset 0 0 0 2px var(--accent);
+}
+[data-skin="grass"] .grid { box-shadow: none; }
+[data-skin="grass"] .c.h { border: 0; background: var(--tile); }
+[data-skin="grass"] .c.h.a { background: var(--tile2); }
+[data-skin="grass"] .c.o, [data-skin="grass"] .c.p { border: 0; background: var(--open); }
+[data-skin="grass"] .c.o.a, [data-skin="grass"] .c.p.a { background: var(--open2); }
+[data-skin="grass"] .c { font-family: Arial, Helvetica, sans-serif; }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 </head>
 <body>
-<div class="desk">
+<div class="desk" id="desk">
   <div class="window">
-    <div class="titlebar"><span id="titleIcon"></span>Minesweeper</div>
+    <div class="titlebar">
+      <span class="ti" id="titleIcon"></span>
+      <span class="tt">Minesweeper</span>
+      <button class="btn tbtn" id="modeBtn" aria-label="Switch light or dark"></button>
+      <button class="btn tbtn" id="optBtn" aria-label="Options">⚙︎</button>
+    </div>
     <div class="body">
       <div class="panel sunken">
         <div class="led sunken" id="mines" aria-label="Mines left"></div>
@@ -178,8 +312,67 @@ body {
         <button class="btn unzoom" id="unzoom" aria-label="Reset zoom" hidden>⤡</button>
       </div>
 
-      <div class="statusbar"><div class="sunken" id="status"></div></div>
-      <button class="btn flag" id="flagBtn" aria-pressed="false"><span id="flagIcon"></span><span id="flagLabel">Flag mode: off</span></button>
+      <div class="statusbar">
+        <div class="st sunken" id="status"></div>
+        <button class="btn rec" id="recoverBtn" hidden>Recover</button>
+      </div>
+      <div class="actions">
+        <button class="btn" id="flagBtn" aria-pressed="false"><span id="flagIcon"></span><span id="flagLabel">Flag mode: off</span></button>
+        <button class="btn" id="dockBtn" aria-pressed="false"><span id="dockLabel">⬇ Move down</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheet" hidden>
+  <div class="window" role="dialog" aria-modal="true" aria-labelledby="optTitle">
+    <div class="titlebar">
+      <span class="tt" id="optTitle">Options</span>
+      <button class="btn tbtn" id="sheetX" aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div>
+        <div class="opt-label">Theme</div>
+        <div class="row" id="skinRow">
+          <button class="btn" id="skin-classic" data-skin="classic"><span class="swatch"><i style="background:#c0c0c0"></i><i style="background:#808080"></i><i style="background:#000080"></i></span>Classic</button>
+          <button class="btn" id="skin-glass" data-skin="glass"><span class="swatch"><i style="background:#8ab8f2"></i><i style="background:#2f6bc7"></i><i style="background:#dbe5f2"></i></span>Glass</button>
+          <button class="btn" id="skin-grass" data-skin="grass"><span class="swatch"><i style="background:#aad751"></i><i style="background:#a2d149"></i><i style="background:#e5c29f"></i></span>Grass</button>
+        </div>
+      </div>
+      <div>
+        <div class="opt-label">Appearance</div>
+        <div class="row" id="modeRow">
+          <button class="btn" id="mode-system" data-mode="system">Match system</button>
+          <button class="btn" id="mode-light" data-mode="light">Light</button>
+          <button class="btn" id="mode-dark" data-mode="dark">Dark</button>
+        </div>
+      </div>
+      <div>
+        <div class="opt-label">Recoveries per game</div>
+        <div class="row" id="recRow" style="--n:5">
+          <button class="btn" id="rec-0" data-rec="0">Off</button>
+          <button class="btn" id="rec-1" data-rec="1">1</button>
+          <button class="btn" id="rec-3" data-rec="3">3</button>
+          <button class="btn" id="rec-5" data-rec="5">5</button>
+          <button class="btn" id="rec-inf" data-rec="inf">∞</button>
+        </div>
+        <div class="stepper">
+          <button class="btn" id="recMinus" aria-label="Fewer recoveries">−</button>
+          <div class="val sunken" id="recVal">1</div>
+          <button class="btn" id="recPlus" aria-label="More recoveries">+</button>
+        </div>
+        <div class="opt-hint">When you hit a mine, Recover undoes that move and flags the mine. Wins that used a recovery don't count towards best times.</div>
+      </div>
+      <div>
+        <div class="opt-label">Space above game when moved down</div>
+        <div class="row" id="gapRow">
+          <button class="btn" id="gap-25" data-gap="25">Quarter</button>
+          <button class="btn" id="gap-33" data-gap="33">Third</button>
+          <button class="btn" id="gap-50" data-gap="50">Half</button>
+        </div>
+        <div class="opt-hint">Leaves room at the top for a picture-in-picture video.</div>
+      </div>
+      <button class="btn done" id="sheetDone">Done</button>
     </div>
   </div>
 </div>
@@ -202,7 +395,50 @@ body {
     set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   };
   const $ = id => document.getElementById(id);
+  const root = document.documentElement;
   const viewport = $('viewport'), grid = $('grid');
+
+  // ---------- settings ----------
+  const settings = {
+    skin: ['classic', 'glass', 'grass'].includes(store.get('ms.skin')) ? store.get('ms.skin') : 'classic',
+    mode: ['system', 'light', 'dark'].includes(store.get('ms.mode')) ? store.get('ms.mode') : 'system',
+    rec: (() => { const v = store.get('ms.rec'); return v === 'inf' ? Infinity : (v !== null && !isNaN(+v) ? Math.max(0, +v) : 0); })(),
+    lowered: store.get('ms.lowered') === '1',
+    gap: ['25', '33', '50'].includes(store.get('ms.gap')) ? store.get('ms.gap') : '33',
+  };
+  const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  const isDark = () => settings.mode === 'dark' || (settings.mode === 'system' && darkQuery.matches);
+
+  function applySettings() {
+    root.dataset.skin = settings.skin;
+    root.dataset.dark = isDark() ? '1' : '0';
+    root.style.setProperty('--gap', settings.gap + '%');
+    $('desk').classList.toggle('lowered', settings.lowered);
+    $('modeBtn').textContent = isDark() ? '☀︎' : '☾';
+    $('modeBtn').setAttribute('aria-label', isDark() ? 'Switch to light mode' : 'Switch to dark mode');
+    $('dockBtn').setAttribute('aria-pressed', String(settings.lowered));
+    $('dockLabel').textContent = settings.lowered ? '⬆ Full height' : '⬇ Move down';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', getComputedStyle(root).getPropertyValue('--desk').trim());
+    // options sheet state
+    const press = (sel, attr, val) => document.querySelectorAll(sel).forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset[attr] === val)));
+    press('#skinRow button', 'skin', settings.skin);
+    press('#modeRow button', 'mode', settings.mode);
+    press('#gapRow button', 'gap', settings.gap);
+    press('#recRow button', 'rec', settings.rec === Infinity ? 'inf' : String(settings.rec));
+    $('recVal').textContent = settings.rec === Infinity ? '∞' : settings.rec === 0 ? 'Off' : String(settings.rec);
+    if (level) render();
+  }
+  function saveSettings() {
+    store.set('ms.skin', settings.skin);
+    store.set('ms.mode', settings.mode);
+    store.set('ms.rec', settings.rec === Infinity ? 'inf' : String(settings.rec));
+    store.set('ms.lowered', settings.lowered ? '1' : '0');
+    store.set('ms.gap', settings.gap);
+    applySettings();
+  }
+  darkQuery.addEventListener?.('change', applySettings);
 
   // ---------- sprites (drawn here, all original) ----------
   const MINE = `<svg viewBox="0 0 16 16"><g stroke="#000" stroke-width="1.4"><line x1="8" y1="1.5" x2="8" y2="14.5"/><line x1="1.5" y1="8" x2="14.5" y2="8"/><line x1="3.4" y1="3.4" x2="12.6" y2="12.6"/><line x1="12.6" y1="3.4" x2="3.4" y2="12.6"/></g><circle cx="8" cy="8" r="4.6" fill="#000"/><rect x="5.6" y="5.6" width="2" height="2" fill="#fff"/></svg>`;
@@ -240,6 +476,7 @@ body {
 
   let level, rows, cols, mineCount, cells, status, exploded, startTime, endTime, flags, newBest;
   let flagMode = false, pressing = -1;
+  let snapshot = null, recoveriesUsed = 0;
   let cellEls = [];
 
   // ---------- rules ----------
@@ -309,17 +546,43 @@ body {
     cells.forEach(c => { if (c.mine) c.state = FLAG; });
     flags = mineCount;
     status = 'won'; endTime = Date.now();
-    const t = Math.max(1, elapsed());
-    const best = bestTime();
-    if (!best || t < best) { store.set(bestKey(), String(t)); newBest = true; }
+    if (recoveriesUsed === 0) {
+      const t = Math.max(1, elapsed());
+      const best = bestTime();
+      if (!best || t < best) { store.set(bestKey(), String(t)); newBest = true; }
+    }
   }
 
   function lose(i) { exploded = i; status = 'lost'; endTime = Date.now(); buzz(60); }
   const over = () => status === 'won' || status === 'lost';
 
+  // ---------- recover ----------
+  function takeSnapshot() {
+    snapshot = { cells: cells.map(c => ({ ...c })), flags };
+  }
+  const recoveriesLeft = () => settings.rec === Infinity ? Infinity : Math.max(0, settings.rec - recoveriesUsed);
+  const canRecover = () => status === 'lost' && !!snapshot && recoveriesLeft() > 0;
+
+  function recover() {
+    if (!canRecover()) return;
+    const hit = exploded;
+    cells = snapshot.cells;
+    flags = snapshot.flags;
+    if (cells[hit] && cells[hit].state === HIDDEN) { cells[hit].state = FLAG; flags++; }
+    status = 'playing';
+    if (startTime && endTime) startTime += Date.now() - endTime;   // don't count time spent on the boom screen
+    endTime = null;
+    exploded = -1;
+    snapshot = null;
+    recoveriesUsed++;
+    render();
+  }
+
+  // ---------- input actions ----------
   function tap(i) {
     if (over() || i < 0) return;
     const s = cells[i].state;
+    takeSnapshot();
     if (s === OPEN) chord(i);
     else if (flagMode) toggleFlag(i);
     else if (s === HIDDEN) reveal(i);
@@ -328,6 +591,7 @@ body {
 
   function longPress(i) {
     if (over() || i < 0) return;
+    takeSnapshot();
     if (cells[i].state === OPEN) chord(i); else toggleFlag(i);
     render();
   }
@@ -338,6 +602,7 @@ body {
   }
   const bestKey = () => `ms.best.${level}.${cols}x${rows}`;
   function bestTime() { const v = parseInt(store.get(bestKey()), 10); return v > 0 ? v : null; }
+  function buzz(ms = 8) { try { navigator.vibrate && navigator.vibrate(ms); } catch {} }
 
   // Board size for a level on the current screen.
   function dims(key) {
@@ -354,7 +619,6 @@ body {
       b.querySelector('small').textContent = `${d.cols}×${d.rows} · ${d.mines}`;
     });
   }
-  function buzz(ms = 8) { try { navigator.vibrate && navigator.vibrate(ms); } catch {} }
 
   // ---------- setup ----------
   function setLevel(key) {
@@ -371,6 +635,7 @@ body {
     for (let i = 0; i < rows * cols; i++) {
       const d = document.createElement('div');
       d._cls = ''; d._txt = '';
+      d._alt = ((Math.floor(i / cols) + (i % cols)) & 1) ? ' a' : '';
       frag.appendChild(d); cellEls.push(d);
     }
     grid.appendChild(frag);
@@ -382,28 +647,31 @@ body {
   function newGame() {
     cells = Array.from({ length: rows * cols }, () => ({ mine: false, adj: 0, state: HIDDEN }));
     status = 'ready'; exploded = -1; startTime = null; endTime = null; flags = 0; newBest = false;
-    pressing = -1;
+    pressing = -1; snapshot = null; recoveriesUsed = 0;
     render();
   }
 
   // ---------- drawing ----------
   function render() {
     const lost = status === 'lost';
+    const recoverable = canRecover();
+    // While a recovery is on offer, don't give away where the other mines are.
+    const showAll = lost && !recoverable;
     for (let i = 0; i < cells.length; i++) {
       const c = cells[i];
       let cls, txt = '';
-      const shownMine = lost && c.mine && c.state !== FLAG;
+      const shownMine = (showAll && c.mine && c.state !== FLAG) || (lost && i === exploded);
       if (c.state === OPEN || shownMine) {
         cls = 'c o' + (i === exploded ? ' x' : '');
         if (c.mine) txt = MINE;
         else if (c.adj) { cls += ' n' + c.adj; txt = String(c.adj); }
       } else if (c.state === FLAG) {
         cls = 'c h';
-        txt = lost && !c.mine ? WRONG : FLAG_SVG;
+        if (showAll && !c.mine) { cls = 'c o'; txt = WRONG; } else txt = FLAG_SVG;
       } else {
         cls = i === pressing ? 'c p' : 'c h';
       }
-      if (lost && c.state === FLAG && !c.mine) cls = 'c o';
+      cls += cellEls[i]._alt;
       const el = cellEls[i];
       if (el._cls !== cls) { el.className = cls; el._cls = cls; }
       if (el._txt !== txt) { el.innerHTML = txt; el._txt = txt; }
@@ -412,11 +680,20 @@ body {
     setLed($('timer'), elapsed());
     const faceKey = status === 'won' ? 'cool' : lost ? 'dead' : pressing >= 0 ? 'oh' : 'smile';
     if ($('face')._k !== faceKey) { $('face').innerHTML = faceSVG(faceKey); $('face')._k = faceKey; }
+
+    const left = recoveriesLeft();
+    $('recoverBtn').hidden = !recoverable;
+    $('recoverBtn').textContent = `Recover (${left === Infinity ? '∞' : left})`;
+
     const best = bestTime();
+    const usedNote = recoveriesUsed ? ` · ${recoveriesUsed} recover${recoveriesUsed === 1 ? 'y' : 'ies'}` : '';
     $('status').textContent =
-      status === 'won' ? `Cleared in ${elapsed()} seconds${newBest ? ' · new best!' : ''}` :
-      lost ? 'Game over. Tap the face to play again.' :
-      (best ? `Best: ${best}s · ` : '') + 'Hold to flag · Pinch to zoom';
+      status === 'won' ? (recoveriesUsed
+        ? `Cleared in ${elapsed()}s${usedNote} (not a best time)`
+        : `Cleared in ${elapsed()}s${newBest ? ' · new best!' : ''}`) :
+      lost ? (recoverable ? 'You hit a mine.' : 'Game over. Tap the face to play again.') :
+      (status === 'playing' && recoveriesUsed ? `Recovered${usedNote}` :
+        (best ? `Best: ${best}s · ` : '') + 'Hold to flag · Pinch to zoom');
   }
 
   setInterval(() => { if (status === 'playing') setLed($('timer'), elapsed()); }, 250);
@@ -428,7 +705,7 @@ body {
 
   // ---------- zoom & pan ----------
   let zoom = 1, origin = { x: 0, y: 0 }, vp = { w: 0, h: 0 }, livePos = { x: 0, y: 0 };
-  const FRAME = 4;   // room for the sunken frame around the field
+  const FRAME = 4;   // room for the frame around the field
 
   const baseCell = () => Math.max(1, Math.floor(Math.min((vp.w - 2 * FRAME) / cols, (vp.h - 2 * FRAME) / rows)));
   const laidSize = z => { const s = baseCell() * z; return { w: s * cols, h: s * rows }; };
@@ -439,6 +716,7 @@ body {
   }
 
   function layout(scale = 1, pos = null) {
+    if (!level) return;
     const laid = laidSize(zoom);
     grid.style.setProperty('--cell', baseCell() * zoom + 'px');
     const p = clamp(pos || origin, { w: laid.w * scale, h: laid.h * scale });
@@ -479,7 +757,7 @@ body {
   const local = p => { const r = viewport.getBoundingClientRect(); return { x: p.x - r.left, y: p.y - r.top }; };
 
   viewport.addEventListener('pointerdown', e => {
-    if (e.target.closest('.unzoom')) return;
+    if (e.target.closest('.unzoom') || !level) return;
     try { viewport.setPointerCapture(e.pointerId); } catch {}
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 1) {
@@ -558,7 +836,34 @@ body {
     $('flagBtn').setAttribute('aria-pressed', String(flagMode));
     $('flagLabel').textContent = 'Flag mode: ' + (flagMode ? 'on' : 'off');
   });
+  $('recoverBtn').addEventListener('click', recover);
+  $('dockBtn').addEventListener('click', () => { settings.lowered = !settings.lowered; saveSettings(); });
+  $('modeBtn').addEventListener('click', () => { settings.mode = isDark() ? 'light' : 'dark'; saveSettings(); });
   $('unzoom').addEventListener('click', () => { zoom = 1; origin = { x: 0, y: 0 }; layout(); });
+
+  // options sheet
+  const openSheet = () => { $('sheet').hidden = false; $('sheetDone').focus(); };
+  const closeSheet = () => { $('sheet').hidden = true; $('optBtn').focus(); };
+  $('optBtn').addEventListener('click', openSheet);
+  $('sheetX').addEventListener('click', closeSheet);
+  $('sheetDone').addEventListener('click', closeSheet);
+  $('sheet').addEventListener('click', e => { if (e.target === $('sheet')) closeSheet(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sheet').hidden) closeSheet(); });
+  $('skinRow').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { settings.skin = b.dataset.skin; saveSettings(); } });
+  $('modeRow').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { settings.mode = b.dataset.mode; saveSettings(); } });
+  $('gapRow').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { settings.gap = b.dataset.gap; saveSettings(); } });
+  $('recRow').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b) { settings.rec = b.dataset.rec === 'inf' ? Infinity : +b.dataset.rec; saveSettings(); }
+  });
+  $('recMinus').addEventListener('click', () => {
+    settings.rec = settings.rec === Infinity ? 99 : Math.max(0, settings.rec - 1); saveSettings();
+  });
+  $('recPlus').addEventListener('click', () => {
+    settings.rec = settings.rec === Infinity ? Infinity : settings.rec >= 99 ? Infinity : settings.rec + 1; saveSettings();
+  });
+
+  applySettings();
 
   // Offline support when hosted as a web app (ignored where unsupported).
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
@@ -569,7 +874,6 @@ body {
     });
     navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {});
   }
-
 })();
 </script>
 
