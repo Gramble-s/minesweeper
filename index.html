@@ -14,23 +14,25 @@
 <title>Minesweeper</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: a desktop-style window filling the phone (or docked to the lower part of the screen).
-   Title bar with appearance + options buttons, LED/face panel, level buttons, a pinch-zoomable
-   field, status bar with Recover, and flag / move-down buttons at the thumb.
-   Three skins (Classic grey bevels, Glass blue, Grass checkerboard), each with light and dark
-   palettes, switched with data-skin / data-dark on the root element. */
+/* Layout: a window filling the phone (or docked to the lower part of the screen).
+   Title bar (appearance, stats, options), counters + face, level buttons, a pinch-zoomable
+   field, status bar with Recover, and Flag / Hint / Move-down at the thumb.
+   Skins switch via data-skin / data-dark on the root; every colour is a token. */
 :root {
   /* Classic, light */
-  --desk: #008080; --win: #c0c0c0; --fg: #000000; --muted: #404040;
+  --desk: #008080; --win: #c0c0c0; --fg: #000000; --muted: #404040; --surface: #c0c0c0;
   --hi: #ffffff; --lo: #808080; --dk: #000000; --soft: #dfdfdf;
   --title-a: #000080; --title-b: #1084d0; --title-fg: #ffffff;
   --tile: #c0c0c0; --tile2: #c0c0c0; --tile-hi: #ffffff;
   --open: #c0c0c0; --open2: #c0c0c0; --line: #808080;
-  --btn: #c0c0c0; --btn-press: #b4b4b4;
+  --btn: #c0c0c0; --btn-press: #b4b4b4; --btn-press-fg: var(--fg);
   --led-bg: #000000; --led-on: #ff0000; --led-off: #3a0000;
-  --boom: #ff0000; --smiley: #ffff00; --accent: #000080;
+  --boom: #ff0000; --smiley: #ffff00; --accent: #000080; --hlc: #ffd23f;
   --n1: #0000ff; --n2: #008000; --n3: #ff0000; --n4: #000080;
   --n5: #800000; --n6: #008080; --n7: #000000; --n8: #808080;
+  --mine-c: #000000; --mine-hi: #ffffff; --flag-c: #ff0000; --pole-c: #000000; --face-ink: #000000;
+  --glow: none;
+  --acc: #0a84ff; --ph: #39ff7a;
   --ui: Tahoma, Verdana, "Segoe UI", system-ui, sans-serif;
   --num: Verdana, Tahoma, Arial, sans-serif;
   --gap: 33%;
@@ -42,7 +44,7 @@
   background: var(--desk);
 }
 :root[data-skin="classic"][data-dark="1"] {
-  --desk: #0d3b3b; --win: #3b3d40; --fg: #e6e6e6; --muted: #b0b0b0;
+  --desk: #0d3b3b; --win: #3b3d40; --fg: #e6e6e6; --muted: #b0b0b0; --surface: #3b3d40;
   --hi: #5e6166; --lo: #202224; --dk: #0a0a0a; --soft: #4a4c50;
   --title-a: #1a1f5c; --title-b: #2b5d8f; --title-fg: #f0f0f0;
   --tile: #4a4d52; --tile2: #4a4d52; --tile-hi: #6a6d72;
@@ -52,10 +54,11 @@
   --boom: #c0281e; --smiley: #f2d600; --accent: #8fb4ff;
   --n1: #6d8bff; --n2: #45c445; --n3: #ff5c52; --n4: #a0a0ff;
   --n5: #e07a6a; --n6: #3fcaca; --n7: #e6e6e6; --n8: #9a9a9a;
+  --mine-c: #dcdcdc; --mine-hi: #3b3d40; --pole-c: #dcdcdc; --flag-c: #ff4a40;
   color-scheme: dark;
 }
 :root[data-skin="glass"] {
-  --desk: #2a6fbf; --win: #e9f0f9; --fg: #14213a; --muted: #4f6283;
+  --desk: #2a6fbf; --win: #e9f0f9; --fg: #14213a; --muted: #4f6283; --surface: #e9f0f9;
   --hi: #ffffff; --lo: #8ea6c6; --dk: #33496b; --soft: #ffffff;
   --title-a: #a9c8ec; --title-b: #d9e8f8; --title-fg: #14213a;
   --tile: #2f6bc7; --tile2: #2f6bc7; --tile-hi: #8ab8f2;
@@ -68,7 +71,7 @@
   color-scheme: light;
 }
 :root[data-skin="glass"][data-dark="1"] {
-  --desk: #0c1d36; --win: #1a2436; --fg: #dfe8f6; --muted: #93a6c4;
+  --desk: #0c1d36; --win: #1a2436; --fg: #dfe8f6; --muted: #93a6c4; --surface: #1a2436;
   --hi: #3a4c69; --lo: #0b121e; --dk: #070b12; --soft: #2a3954;
   --title-a: #22385c; --title-b: #2f4c7a; --title-fg: #e6eefb;
   --tile: #1e4c94; --tile2: #1e4c94; --tile-hi: #4f86d6;
@@ -78,10 +81,11 @@
   --boom: #b8352b; --smiley: #f2c94c; --accent: #79a8ff;
   --n1: #7d96ff; --n2: #55c46a; --n3: #ff6b60; --n4: #a7b0ff;
   --n5: #e48b6e; --n6: #4dd0d0; --n7: #e6eefb; --n8: #9aa6b6;
+  --mine-c: #dfe8f6; --mine-hi: #1a2436; --pole-c: #dfe8f6; --flag-c: #ff5a4f;
   color-scheme: dark;
 }
 :root[data-skin="grass"] {
-  --desk: #4a752c; --win: #578a34; --fg: #ffffff; --muted: #e3f0d4;
+  --desk: #4a752c; --win: #578a34; --fg: #ffffff; --muted: #e3f0d4; --surface: #3d6624;
   --hi: #6fa043; --lo: #3d6624; --dk: #2f4f1c; --soft: #6fa043;
   --title-a: #4a752c; --title-b: #4a752c; --title-fg: #ffffff;
   --tile: #aad751; --tile2: #a2d149; --tile-hi: #bfe17d;
@@ -91,10 +95,11 @@
   --boom: #db3236; --smiley: #ffd54f; --accent: #ffffff;
   --n1: #1976d2; --n2: #388e3c; --n3: #d32f2f; --n4: #7b1fa2;
   --n5: #ff8f00; --n6: #0097a7; --n7: #424242; --n8: #757575;
+  --num: Arial, Helvetica, sans-serif;
   color-scheme: light;
 }
 :root[data-skin="grass"][data-dark="1"] {
-  --desk: #1b2c11; --win: #243a17; --fg: #e8f2dd; --muted: #a9c492;
+  --desk: #1b2c11; --win: #243a17; --fg: #e8f2dd; --muted: #a9c492; --surface: #142010;
   --hi: #34531f; --lo: #142010; --dk: #0e170a; --soft: #34531f;
   --title-a: #1b2c11; --title-b: #1b2c11; --title-fg: #e8f2dd;
   --tile: #4f7a2a; --tile2: #487226; --tile-hi: #63923a;
@@ -104,6 +109,104 @@
   --boom: #a8282b; --smiley: #e6c040; --accent: #c8e6a8;
   --n1: #64a8f0; --n2: #6cc070; --n3: #ff6b66; --n4: #c48ae0;
   --n5: #ffb04d; --n6: #3fc6d6; --n7: #e0e0e0; --n8: #a0a0a0;
+  --mine-c: #111111; --pole-c: #111111;
+  color-scheme: dark;
+}
+/* Terminal: old LCD (light) / phosphor CRT (dark, colour from --ph) */
+:root[data-skin="terminal"] {
+  --desk: #9aa77a; --win: #c7d3a5; --fg: #1f2a12; --muted: #4a5a2c; --surface: #c7d3a5;
+  --hi: #d8e2b9; --lo: #9aa77a; --dk: #1f2a12; --soft: #d8e2b9;
+  --title-a: #1f2a12; --title-b: #1f2a12; --title-fg: #c7d3a5;
+  --tile: #aebd88; --tile2: #aebd88; --tile-hi: #c7d3a5;
+  --open: #c7d3a5; --open2: #c7d3a5; --line: #b3c18f;
+  --btn: #c7d3a5; --btn-press: #1f2a12; --btn-press-fg: #c7d3a5;
+  --led-bg: #c7d3a5; --led-on: #1f2a12; --led-off: #b6c493;
+  --boom: #8f5b3a; --smiley: #c7d3a5; --accent: #1f2a12; --hlc: #1f2a12;
+  --n1: #1f2a12; --n2: #1f2a12; --n3: #1f2a12; --n4: #1f2a12;
+  --n5: #1f2a12; --n6: #1f2a12; --n7: #1f2a12; --n8: #1f2a12;
+  --mine-c: #1f2a12; --mine-hi: #c7d3a5; --flag-c: #1f2a12; --pole-c: #1f2a12; --face-ink: #1f2a12;
+  --glow: none;
+  --ui: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --num: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+:root[data-skin="terminal"][data-dark="1"] {
+  --desk: #000000; --win: color-mix(in srgb, var(--ph) 4%, #000);
+  --fg: var(--ph); --muted: color-mix(in srgb, var(--ph) 60%, #000); --surface: var(--win);
+  --hi: color-mix(in srgb, var(--ph) 25%, #000); --lo: #000000; --dk: #000000; --soft: color-mix(in srgb, var(--ph) 12%, #000);
+  --title-a: color-mix(in srgb, var(--ph) 14%, #000); --title-b: var(--title-a); --title-fg: var(--ph);
+  --tile: color-mix(in srgb, var(--ph) 14%, #000); --tile2: var(--tile); --tile-hi: color-mix(in srgb, var(--ph) 30%, #000);
+  --open: var(--win); --open2: var(--win); --line: var(--tile);
+  --btn: var(--win); --btn-press: var(--ph); --btn-press-fg: #000000;
+  --led-bg: #000000; --led-on: var(--ph); --led-off: color-mix(in srgb, var(--ph) 10%, #000);
+  --boom: color-mix(in srgb, #ff3030 55%, #000); --smiley: var(--win); --accent: var(--ph); --hlc: var(--ph);
+  --n1: var(--ph); --n2: var(--ph); --n3: var(--ph); --n4: var(--ph);
+  --n5: var(--ph); --n6: var(--ph); --n7: var(--ph); --n8: var(--ph);
+  --mine-c: var(--ph); --mine-hi: #000000; --flag-c: var(--ph); --pole-c: var(--ph); --face-ink: var(--ph);
+  --glow: 0 0 6px currentColor;
+  color-scheme: dark;
+}
+/* Minimal: clean, flat, accent colour from --acc */
+:root[data-skin="minimal"] {
+  --desk: #f2f2f7; --win: #ffffff; --fg: #1c1c1e; --muted: #6c6c70; --surface: #f2f2f7;
+  --hi: #ffffff; --lo: #d1d1d6; --dk: #1c1c1e; --soft: #ffffff;
+  --title-a: transparent; --title-b: transparent; --title-fg: #1c1c1e;
+  --tile: color-mix(in srgb, var(--acc) 34%, #ffffff); --tile2: var(--tile); --tile-hi: var(--tile);
+  --open: #f2f2f7; --open2: #f2f2f7; --line: #ffffff;
+  --btn: #f2f2f7; --btn-press: var(--acc); --btn-press-fg: #ffffff;
+  --boom: #ff3b30; --smiley: #ffcc00; --accent: var(--acc); --hlc: var(--acc);
+  --n1: #007aff; --n2: #34c759; --n3: #ff3b30; --n4: #af52de;
+  --n5: #ff9500; --n6: #32ade6; --n7: #1c1c1e; --n8: #8e8e93;
+  --mine-c: #1c1c1e; --mine-hi: #ffffff; --flag-c: #ff3b30; --pole-c: #1c1c1e; --face-ink: #1c1c1e;
+  --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --num: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+:root[data-skin="minimal"][data-dark="1"] {
+  --desk: #000000; --win: #1c1c1e; --fg: #f2f2f7; --muted: #98989f; --surface: #2c2c2e;
+  --lo: #3a3a3c; --dk: #f2f2f7;
+  --title-fg: #f2f2f7;
+  --tile: color-mix(in srgb, var(--acc) 48%, #1c1c1e); --tile2: var(--tile); --tile-hi: var(--tile);
+  --open: #2c2c2e; --open2: #2c2c2e; --line: #1c1c1e;
+  --btn: #2c2c2e;
+  --boom: #ff453a; --smiley: #ffd60a;
+  --n1: #409cff; --n2: #30d158; --n3: #ff453a; --n4: #bf5af2;
+  --n5: #ff9f0a; --n6: #64d2ff; --n7: #f2f2f7; --n8: #8e8e93;
+  --mine-c: #f2f2f7; --mine-hi: #1c1c1e; --flag-c: #ff453a; --pole-c: #f2f2f7; --face-ink: #1c1c1e;
+  color-scheme: dark;
+}
+/* Midnight: true black, always dark */
+:root[data-skin="midnight"] {
+  --desk: #000000; --win: #000000; --fg: #f2f2f7; --muted: #8e8e93; --surface: #121214;
+  --hi: #2c2c2e; --lo: #2c2c2e; --dk: #f2f2f7; --soft: #121214;
+  --title-a: transparent; --title-b: transparent; --title-fg: #f2f2f7;
+  --tile: color-mix(in srgb, var(--acc) 20%, #1c1c1e); --tile2: var(--tile); --tile-hi: var(--tile);
+  --open: #0c0c0d; --open2: #0c0c0d; --line: #000000;
+  --btn: #1c1c1e; --btn-press: var(--acc); --btn-press-fg: #ffffff;
+  --boom: #ff453a; --smiley: #ffd60a; --accent: var(--acc); --hlc: var(--acc);
+  --n1: #409cff; --n2: #30d158; --n3: #ff453a; --n4: #bf5af2;
+  --n5: #ff9f0a; --n6: #64d2ff; --n7: #f2f2f7; --n8: #8e8e93;
+  --mine-c: #f2f2f7; --mine-hi: #000000; --flag-c: #ff453a; --pole-c: #f2f2f7; --face-ink: #000000;
+  --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --num: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+/* Radar: sonar screen, always dark */
+:root[data-skin="radar"] {
+  --desk: #000000; --win: #020805; --fg: #4dff9a; --muted: #2a9c5c; --surface: #020805;
+  --hi: #14472a; --lo: #000000; --dk: #000000; --soft: #06150c;
+  --title-a: transparent; --title-b: transparent; --title-fg: #4dff9a;
+  --tile: #0a2614; --tile2: #0a2614; --tile-hi: #14472a;
+  --open: transparent; --open2: transparent; --line: #0f3a20;
+  --btn: #04120a; --btn-press: #0f3a20; --btn-press-fg: #4dff9a;
+  --led-bg: #000000; --led-on: #4dff9a; --led-off: #08200f;
+  --boom: #5a0d0d; --smiley: #04120a; --accent: #4dff9a; --hlc: #ffd24d;
+  --n1: #4dff9a; --n2: #a6ff4d; --n3: #ffd24d; --n4: #ffb000;
+  --n5: #ff7a3d; --n6: #ff4d4d; --n7: #ff4d9a; --n8: #ffffff;
+  --mine-c: #ff4d4d; --mine-hi: #ffd0d0; --flag-c: #ffb000; --pole-c: #4dff9a; --face-ink: #4dff9a;
+  --glow: 0 0 6px currentColor;
+  --ui: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --num: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: dark;
 }
 
@@ -126,11 +229,10 @@ body {
   display: flex; flex-direction: column; align-items: center;
 }
 .desk.lowered .window { height: calc(100% - var(--gap)); margin-top: auto; }
-/* Docked: drop the level row so the board keeps as much room as possible. */
 .desk.lowered .levels { display: none; }
 .desk.lowered .body { gap: 6px; }
 
-/* ===== Classic (base styles) ===== */
+/* ===== Base (Classic) ===== */
 .raised { border: 2px solid; border-color: var(--hi) var(--lo) var(--lo) var(--hi); }
 .sunken { border: 2px solid; border-color: var(--lo) var(--hi) var(--hi) var(--lo); }
 .window {
@@ -144,21 +246,21 @@ body {
 .titlebar {
   background: linear-gradient(90deg, var(--title-a), var(--title-b));
   color: var(--title-fg); font-weight: 700; font-size: 14px;
-  padding: 3px 3px 3px 6px; display: flex; align-items: center; gap: 6px; min-height: 26px;
+  padding: 3px 3px 3px 6px; display: flex; align-items: center; gap: 4px; min-height: 26px;
 }
 .titlebar .ti { width: 16px; height: 16px; flex: none; display: flex; }
 .titlebar .ti svg { width: 16px; height: 16px; }
-.titlebar .tt { flex: 1; }
-.tbtn {
-  width: 28px; height: 24px; padding: 0; font-size: 14px; line-height: 1;
-  display: grid; place-items: center;
-}
+.titlebar .tt { flex: 1; min-width: 0; }
+.tbtn { width: 30px; height: 26px; padding: 0; font-size: 14px; line-height: 1; display: grid; place-items: center; }
+.tbtn svg { width: 15px; height: 15px; }
 .body { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 4px 6px 6px; }
 
 .panel { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 6px 8px; }
-.led { justify-self: start; display: flex; background: var(--led-bg); padding: 2px; gap: 1px; }
+.led { justify-self: start; display: flex; align-items: center; background: var(--led-bg); padding: 2px; gap: 1px; }
 .led.right { justify-self: end; }
 .led svg { width: 19px; height: 34px; display: block; }
+.led.txt { background: transparent; gap: 6px; padding: 4px 6px; font: 600 24px/1 var(--ui); color: var(--fg); font-variant-numeric: tabular-nums; }
+.led.txt svg { width: 20px; height: 20px; }
 .facebtn {
   width: 46px; height: 46px; padding: 0; background: var(--btn); cursor: pointer;
   border: 2px solid; border-color: var(--hi) var(--lo) var(--lo) var(--hi);
@@ -168,18 +270,18 @@ body {
 .facebtn:active { border-color: var(--lo) var(--hi) var(--hi) var(--lo); }
 .facebtn svg { width: 32px; height: 32px; }
 
-.levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.levels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
 .btn {
   font: 13px/1.15 var(--ui); color: var(--fg); background: var(--btn);
   border: 2px solid; border-color: var(--hi) var(--dk) var(--dk) var(--hi);
   box-shadow: inset -1px -1px 0 var(--lo), inset 1px 1px 0 var(--soft);
-  padding: 6px 4px 5px; cursor: pointer;
+  padding: 6px 3px 5px; cursor: pointer; min-width: 0;
 }
-.btn small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.btn small { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .btn[aria-pressed="true"], .btn:active {
   border-color: var(--dk) var(--hi) var(--hi) var(--dk);
   box-shadow: inset 1px 1px 0 var(--lo), inset -1px -1px 0 var(--soft);
-  background: var(--btn-press);
+  background: var(--btn-press); color: var(--btn-press-fg);
 }
 .btn[aria-pressed="true"] { font-weight: 700; }
 .btn:focus-visible, .facebtn:focus-visible { outline: 1px dotted var(--fg); outline-offset: -5px; }
@@ -204,40 +306,56 @@ body {
   border: max(2px, calc(var(--cell) * 0.12)) solid;
   border-color: var(--tile-hi) var(--lo) var(--lo) var(--tile-hi);
 }
+.c.q { color: var(--fg); font-size: calc(var(--cell) * 0.5); }
 .c.o, .c.p { background: var(--open); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
 .c.x { background: var(--boom) !important; }
 .n1 { color: var(--n1) } .n2 { color: var(--n2) } .n3 { color: var(--n3) } .n4 { color: var(--n4) }
 .n5 { color: var(--n5) } .n6 { color: var(--n6) } .n7 { color: var(--n7) } .n8 { color: var(--n8) }
+.c.hl { outline: 3px solid transparent; outline-offset: -3px; animation: hl 1.4s ease-out; }
+@keyframes hl { 0%, 55% { outline-color: var(--hlc); } 100% { outline-color: transparent; } }
+.c.rv { animation: ping .8s ease-out; }
+@keyframes ping {
+  0% { box-shadow: inset 0 0 0 200px color-mix(in srgb, var(--fg) 45%, transparent); }
+  100% { box-shadow: inset 0 0 0 200px transparent; }
+}
 
 .unzoom { position: absolute; top: 6px; right: 6px; width: 40px; height: 40px; padding: 0; font-size: 18px; }
 
 .statusbar { display: flex; gap: 6px; align-items: stretch; }
 .statusbar .st { flex: 1; min-width: 0; padding: 4px 6px; min-height: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
 .statusbar .rec { flex: none; font-weight: 700; padding: 4px 12px; }
-.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.actions .btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 6px; font-size: 15px; }
-.actions .btn svg { width: 20px; height: 20px; flex: none; }
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.actions .btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 4px; font-size: 14px; white-space: nowrap; }
+.actions .btn svg { width: 18px; height: 18px; flex: none; }
 
-/* Options sheet */
+/* Sheets (Options, Stats) */
 .sheet-bg {
   position: fixed; inset: 0; z-index: 20;
-  background: rgba(0,0,0,.45);
+  background: rgba(0,0,0,.5);
   display: flex; align-items: center; justify-content: center;
   padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 16px) max(16px, env(safe-area-inset-left, 0px));
 }
-.sheet-bg .window { height: auto; max-height: 100%; max-width: 420px; }
-.sheet-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+.sheet-bg .window { height: auto; max-height: 100%; max-width: 440px; }
+.sheet-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 16px; overflow: auto; -webkit-overflow-scrolling: touch; }
+.sect { font-weight: 700; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: -6px; }
 .opt-label { font-weight: 700; margin-bottom: 6px; }
 .opt-hint { color: var(--muted); font-size: 12px; margin-top: 5px; line-height: 1.35; }
 .row { display: grid; gap: 6px; grid-template-columns: repeat(var(--n, 3), 1fr); }
-.row .btn { padding: 8px 4px; }
-.swatch { display: flex; height: 18px; margin: 0 auto 5px; width: 54px; }
+.row .btn { padding: 8px 3px; }
+.swatch { display: flex; height: 16px; margin: 0 auto 5px; width: 48px; }
 .swatch i { flex: 1; }
+.dot { display: block; width: 18px; height: 18px; border-radius: 50%; margin: 0 auto 4px; }
 .stepper { display: grid; grid-template-columns: 44px 1fr 44px; gap: 6px; margin-top: 6px; align-items: stretch; }
-.stepper .val { display: grid; place-items: center; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.stepper .val { display: grid; place-items: center; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; padding: 6px 0; }
 .done { padding: 10px; font-size: 15px; font-weight: 700; }
+.stat-card { padding: 8px; }
+.stat-card h3 { margin: 0 0 8px; font-size: 13px; }
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 6px; }
+.stat-grid div { min-width: 0; }
+.stat-grid b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+.stat-grid span { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
 
-/* ===== Glass skin ===== */
+/* ===== Glass ===== */
 [data-skin="glass"] .window {
   border: 1px solid var(--lo); border-radius: 10px; padding: 0; overflow: hidden;
   box-shadow: 0 8px 24px rgba(0,0,0,.28), inset 0 1px 0 var(--soft);
@@ -260,9 +378,10 @@ body {
   background: linear-gradient(160deg, var(--tile-hi), var(--tile) 70%);
   box-shadow: inset 0 calc(var(--cell) * 0.06) 0 rgba(255,255,255,.28);
 }
+[data-skin="glass"] .c.q { color: #ffffff; }
 [data-skin="glass"] .c.o, [data-skin="glass"] .c.p { border: 0; box-shadow: inset 0 0 0 0.5px var(--line); }
 
-/* ===== Grass skin ===== */
+/* ===== Grass ===== */
 [data-skin="grass"] .window { border: 0; border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
 [data-skin="grass"] .titlebar { padding: 6px 6px 6px 12px; }
 [data-skin="grass"] .raised, [data-skin="grass"] .sunken { border: 0; border-radius: 8px; background: var(--lo); }
@@ -277,11 +396,102 @@ body {
 [data-skin="grass"] .grid { box-shadow: none; }
 [data-skin="grass"] .c.h { border: 0; background: var(--tile); }
 [data-skin="grass"] .c.h.a { background: var(--tile2); }
+[data-skin="grass"] .c.q { color: #2f4f1c; }
 [data-skin="grass"] .c.o, [data-skin="grass"] .c.p { border: 0; background: var(--open); }
 [data-skin="grass"] .c.o.a, [data-skin="grass"] .c.p.a { background: var(--open2); }
-[data-skin="grass"] .c { font-family: Arial, Helvetica, sans-serif; }
 
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* ===== Terminal ===== */
+[data-skin="terminal"] .window { border: 1px solid var(--fg); box-shadow: 0 0 18px color-mix(in srgb, var(--fg) 25%, transparent); padding: 0; }
+[data-skin="terminal"] .titlebar { background: var(--title-a); text-shadow: var(--glow); border-bottom: 1px solid var(--fg); }
+[data-skin="terminal"] .titlebar .tt::before { content: "> "; }
+[data-skin="terminal"] .raised, [data-skin="terminal"] .sunken { border: 1px solid color-mix(in srgb, var(--fg) 45%, transparent); }
+[data-skin="terminal"] .led { padding: 3px 4px; }
+[data-skin="terminal"][data-dark="1"] .led svg { filter: drop-shadow(0 0 3px var(--led-on)); }
+[data-skin="terminal"] .btn, [data-skin="terminal"] .facebtn {
+  border: 1px solid var(--fg); border-radius: 0; background: var(--btn); color: var(--fg);
+  box-shadow: none; text-shadow: var(--glow);
+}
+[data-skin="terminal"] .btn[aria-pressed="true"], [data-skin="terminal"] .btn:active, [data-skin="terminal"] .facebtn:active {
+  background: var(--btn-press); color: var(--btn-press-fg); text-shadow: none;
+}
+[data-skin="terminal"] .btn[aria-pressed="true"] small, [data-skin="terminal"] .btn:active small { color: var(--btn-press-fg); }
+[data-skin="terminal"] .grid { box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 45%, transparent); }
+[data-skin="terminal"] .c { text-shadow: var(--glow); font-weight: 700; }
+[data-skin="terminal"][data-dark="1"] .c svg { filter: drop-shadow(0 0 2px var(--mine-c)); }
+[data-skin="terminal"] .c.h { border: max(1px, calc(var(--cell) * 0.07)) solid var(--open); background: var(--tile); box-shadow: inset 0 0 0 1px var(--tile-hi); }
+[data-skin="terminal"] .c.o, [data-skin="terminal"] .c.p { border: 0; background: var(--open); }
+[data-skin="terminal"] .statusbar .st { text-shadow: var(--glow); }
+
+/* ===== Minimal + Midnight ===== */
+:is([data-skin="minimal"], [data-skin="midnight"]) .window {
+  border: 0; border-radius: 22px; padding: 0; overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.08);
+}
+[data-skin="midnight"] .window { box-shadow: none; }
+:is([data-skin="minimal"], [data-skin="midnight"]) .titlebar { background: none; font: 600 17px/1.2 var(--ui); padding: 12px 10px 2px 16px; gap: 6px; }
+:is([data-skin="minimal"], [data-skin="midnight"]) .titlebar .ti { display: none; }
+:is([data-skin="minimal"], [data-skin="midnight"]) .body { padding: 6px 10px 10px; }
+:is([data-skin="minimal"], [data-skin="midnight"]) :is(.raised, .sunken) { border: 0; border-radius: 14px; background: var(--surface); }
+:is([data-skin="minimal"], [data-skin="midnight"]) :is(.btn, .facebtn) {
+  border: 0; border-radius: 12px; background: var(--btn); color: var(--fg); box-shadow: none; font-family: var(--ui);
+}
+:is([data-skin="minimal"], [data-skin="midnight"]) .tbtn { border-radius: 50%; width: 32px; height: 32px; background: var(--surface); }
+:is([data-skin="minimal"], [data-skin="midnight"]) :is(.btn[aria-pressed="true"], .btn:active, .facebtn:active) {
+  background: var(--btn-press); color: var(--btn-press-fg); font-weight: 600;
+}
+:is([data-skin="minimal"], [data-skin="midnight"]) .btn[aria-pressed="true"] small { color: color-mix(in srgb, var(--btn-press-fg) 80%, transparent); }
+:is([data-skin="minimal"], [data-skin="midnight"]) .facebtn { border-radius: 50%; background: transparent; }
+:is([data-skin="minimal"], [data-skin="midnight"]) .grid { box-shadow: none; background: transparent; }
+:is([data-skin="minimal"], [data-skin="midnight"]) .c { font-weight: 700; font-size: calc(var(--cell) * 0.56); }
+:is([data-skin="minimal"], [data-skin="midnight"]) .c.h,
+:is([data-skin="minimal"], [data-skin="midnight"]) .c.o,
+:is([data-skin="minimal"], [data-skin="midnight"]) .c.p {
+  border: max(1px, calc(var(--cell) * 0.06)) solid var(--win); border-radius: calc(var(--cell) * 0.24);
+}
+:is([data-skin="minimal"], [data-skin="midnight"]) .c.h { background: var(--tile); box-shadow: none; }
+:is([data-skin="minimal"], [data-skin="midnight"]) :is(.c.o, .c.p) { background: var(--open); }
+:is([data-skin="minimal"], [data-skin="midnight"]) .statusbar .st { justify-content: center; color: var(--muted); background: none; }
+:is([data-skin="minimal"], [data-skin="midnight"]) .unzoom { border-radius: 50%; }
+:is([data-skin="minimal"], [data-skin="midnight"]) .sect { color: var(--muted); }
+
+/* ===== Radar ===== */
+[data-skin="radar"] .window { border: 1px solid color-mix(in srgb, var(--fg) 40%, transparent); border-radius: 14px; padding: 0; overflow: hidden; box-shadow: 0 0 24px color-mix(in srgb, var(--fg) 15%, transparent); }
+[data-skin="radar"] .titlebar { background: none; text-shadow: var(--glow); padding: 8px 8px 4px 12px; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
+[data-skin="radar"] .titlebar .ti svg { filter: drop-shadow(0 0 3px var(--mine-c)); }
+[data-skin="radar"] :is(.raised, .sunken) { border: 1px solid var(--line); border-radius: 8px; }
+[data-skin="radar"] .led { border-radius: 6px; padding: 3px 4px; }
+[data-skin="radar"] .led svg { filter: drop-shadow(0 0 3px var(--led-on)); }
+[data-skin="radar"] :is(.btn, .facebtn) {
+  border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent); border-radius: 8px;
+  background: var(--btn); color: var(--fg); box-shadow: none; text-shadow: var(--glow);
+}
+[data-skin="radar"] :is(.btn[aria-pressed="true"], .btn:active, .facebtn:active) { background: var(--btn-press); border-color: var(--fg); }
+[data-skin="radar"] .grid {
+  box-shadow: 0 0 0 1px var(--line);
+  background:
+    repeating-radial-gradient(circle at 50% 50%, transparent 0 42px, color-mix(in srgb, var(--fg) 14%, transparent) 42px 43px),
+    radial-gradient(circle at 50% 50%, #04170c, #000 75%);
+}
+[data-skin="radar"] .c { text-shadow: var(--glow); font-weight: 700; }
+[data-skin="radar"] .c svg { filter: drop-shadow(0 0 3px var(--mine-c)); }
+[data-skin="radar"] .c.h {
+  border: max(1px, calc(var(--cell) * 0.06)) solid transparent; background-clip: padding-box;
+  background-color: color-mix(in srgb, var(--fg) 11%, transparent);
+  border-radius: calc(var(--cell) * 0.16);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 18%, transparent);
+}
+[data-skin="radar"] .c.q { color: var(--fg); }
+[data-skin="radar"] :is(.c.o, .c.p) { border: 0; background: transparent; box-shadow: inset 0 0 0 .5px color-mix(in srgb, var(--fg) 9%, transparent); }
+[data-skin="radar"] .statusbar .st { text-shadow: var(--glow); }
+
+/* Monospace themes run wider: tighten the small labels so they fit narrow phones. */
+:is([data-skin="terminal"], [data-skin="radar"]) .actions .btn { font-size: 12.5px; gap: 4px; letter-spacing: -.2px; }
+:is([data-skin="terminal"], [data-skin="radar"]) .levels .btn { font-size: 12px; }
+:is([data-skin="terminal"], [data-skin="radar"]) .levels .btn small { font-size: 9.5px; letter-spacing: -.4px; }
+.btn small { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 370px) { .actions .btn { font-size: 12.5px; gap: 4px; } }
+
+@media (prefers-reduced-motion: reduce) { .c.rv, .c.hl { animation: none; } }
 </style>
 
 </head>
@@ -292,6 +502,7 @@ body {
       <span class="ti" id="titleIcon"></span>
       <span class="tt">Minesweeper</span>
       <button class="btn tbtn" id="modeBtn" aria-label="Switch light or dark"></button>
+      <button class="btn tbtn" id="statsBtn" aria-label="Stats"></button>
       <button class="btn tbtn" id="optBtn" aria-label="Options">⚙︎</button>
     </div>
     <div class="body">
@@ -302,9 +513,10 @@ body {
       </div>
 
       <div class="levels" id="levels" role="group" aria-label="Difficulty">
-        <button class="btn" id="lv-easy" data-level="easy">Beginner<small>9×9 · 10</small></button>
-        <button class="btn" id="lv-medium" data-level="medium">Intermediate<small>&nbsp;</small></button>
-        <button class="btn" id="lv-hard" data-level="hard">Expert<small>&nbsp;</small></button>
+        <button class="btn" id="lv-easy" data-level="easy">Easy<small>&nbsp;</small></button>
+        <button class="btn" id="lv-medium" data-level="medium">Medium<small>&nbsp;</small></button>
+        <button class="btn" id="lv-hard" data-level="hard">Hard<small>&nbsp;</small></button>
+        <button class="btn" id="lv-custom" data-level="custom">Custom<small>&nbsp;</small></button>
       </div>
 
       <div class="viewport" id="viewport">
@@ -317,7 +529,8 @@ body {
         <button class="btn rec" id="recoverBtn" hidden>Recover</button>
       </div>
       <div class="actions">
-        <button class="btn" id="flagBtn" aria-pressed="false"><span id="flagIcon"></span><span id="flagLabel">Flag mode: off</span></button>
+        <button class="btn" id="flagBtn" aria-pressed="false"><span id="flagIcon"></span><span>Flag</span></button>
+        <button class="btn" id="hintBtn"><span id="hintIcon"></span><span>Hint</span></button>
         <button class="btn" id="dockBtn" aria-pressed="false"><span id="dockLabel">⬇ Move down</span></button>
       </div>
     </div>
@@ -331,44 +544,128 @@ body {
       <button class="btn tbtn" id="sheetX" aria-label="Close">✕</button>
     </div>
     <div class="sheet-body">
+      <div class="sect">Look</div>
       <div>
         <div class="opt-label">Theme</div>
-        <div class="row" id="skinRow">
-          <button class="btn" id="skin-classic" data-skin="classic"><span class="swatch"><i style="background:#c0c0c0"></i><i style="background:#808080"></i><i style="background:#000080"></i></span>Classic</button>
-          <button class="btn" id="skin-glass" data-skin="glass"><span class="swatch"><i style="background:#8ab8f2"></i><i style="background:#2f6bc7"></i><i style="background:#dbe5f2"></i></span>Glass</button>
-          <button class="btn" id="skin-grass" data-skin="grass"><span class="swatch"><i style="background:#aad751"></i><i style="background:#a2d149"></i><i style="background:#e5c29f"></i></span>Grass</button>
+        <div class="row" style="--n:4">
+          <button class="btn" id="skin-classic" data-opt="skin" data-val="classic"><span class="swatch"><i style="background:#c0c0c0"></i><i style="background:#808080"></i><i style="background:#000080"></i></span>Classic</button>
+          <button class="btn" id="skin-glass" data-opt="skin" data-val="glass"><span class="swatch"><i style="background:#8ab8f2"></i><i style="background:#2f6bc7"></i><i style="background:#dbe5f2"></i></span>Glass</button>
+          <button class="btn" id="skin-grass" data-opt="skin" data-val="grass"><span class="swatch"><i style="background:#aad751"></i><i style="background:#a2d149"></i><i style="background:#e5c29f"></i></span>Grass</button>
+          <button class="btn" id="skin-terminal" data-opt="skin" data-val="terminal"><span class="swatch"><i style="background:#000"></i><i style="background:#39ff7a"></i><i style="background:#0b2614"></i></span>Terminal</button>
+          <button class="btn" id="skin-minimal" data-opt="skin" data-val="minimal"><span class="swatch"><i style="background:#f2f2f7"></i><i style="background:#a5cdfd"></i><i style="background:#ffffff"></i></span>Minimal</button>
+          <button class="btn" id="skin-midnight" data-opt="skin" data-val="midnight"><span class="swatch"><i style="background:#000"></i><i style="background:#1d2a3d"></i><i style="background:#0c0c0d"></i></span>Midnight</button>
+          <button class="btn" id="skin-radar" data-opt="skin" data-val="radar"><span class="swatch"><i style="background:#000"></i><i style="background:#0a2614"></i><i style="background:#4dff9a"></i></span>Radar</button>
         </div>
+      </div>
+      <div id="accGroup">
+        <div class="opt-label">Accent colour</div>
+        <div class="row" style="--n:6">
+          <button class="btn" id="acc-blue" data-opt="acc" data-val="blue" aria-label="Blue"><span class="dot" style="background:#0a84ff"></span></button>
+          <button class="btn" id="acc-purple" data-opt="acc" data-val="purple" aria-label="Purple"><span class="dot" style="background:#bf5af2"></span></button>
+          <button class="btn" id="acc-pink" data-opt="acc" data-val="pink" aria-label="Pink"><span class="dot" style="background:#ff375f"></span></button>
+          <button class="btn" id="acc-orange" data-opt="acc" data-val="orange" aria-label="Orange"><span class="dot" style="background:#ff9f0a"></span></button>
+          <button class="btn" id="acc-green" data-opt="acc" data-val="green" aria-label="Green"><span class="dot" style="background:#30d158"></span></button>
+          <button class="btn" id="acc-teal" data-opt="acc" data-val="teal" aria-label="Teal"><span class="dot" style="background:#40c8e0"></span></button>
+        </div>
+      </div>
+      <div id="phGroup">
+        <div class="opt-label">Screen colour</div>
+        <div class="row" style="--n:4">
+          <button class="btn" id="ph-green" data-opt="ph" data-val="green"><span class="dot" style="background:#39ff7a"></span>Green</button>
+          <button class="btn" id="ph-amber" data-opt="ph" data-val="amber"><span class="dot" style="background:#ffb000"></span>Amber</button>
+          <button class="btn" id="ph-white" data-opt="ph" data-val="white"><span class="dot" style="background:#e6e6e6"></span>White</button>
+          <button class="btn" id="ph-cyan" data-opt="ph" data-val="cyan"><span class="dot" style="background:#4fe0ff"></span>Cyan</button>
+        </div>
+        <div class="opt-hint">Used in dark mode. Light mode shows an old LCD screen.</div>
       </div>
       <div>
         <div class="opt-label">Appearance</div>
         <div class="row" id="modeRow">
-          <button class="btn" id="mode-system" data-mode="system">Match system</button>
-          <button class="btn" id="mode-light" data-mode="light">Light</button>
-          <button class="btn" id="mode-dark" data-mode="dark">Dark</button>
+          <button class="btn" id="mode-system" data-opt="mode" data-val="system">Match system</button>
+          <button class="btn" id="mode-light" data-opt="mode" data-val="light">Light</button>
+          <button class="btn" id="mode-dark" data-opt="mode" data-val="dark">Dark</button>
         </div>
+        <div class="opt-hint" id="modeNote" hidden>This theme is always dark.</div>
+      </div>
+
+      <div class="sect">Gameplay</div>
+      <div>
+        <div class="opt-label">No-guess boards</div>
+        <div class="row" style="--n:2">
+          <button class="btn" id="ng-off" data-opt="noguess" data-val="false">Off</button>
+          <button class="btn" id="ng-on" data-opt="noguess" data-val="true">On</button>
+        </div>
+        <div class="opt-hint">Every board can be solved by logic alone, so you never have to guess. Starts with your next game.</div>
       </div>
       <div>
         <div class="opt-label">Recoveries per game</div>
-        <div class="row" id="recRow" style="--n:5">
-          <button class="btn" id="rec-0" data-rec="0">Off</button>
-          <button class="btn" id="rec-1" data-rec="1">1</button>
-          <button class="btn" id="rec-3" data-rec="3">3</button>
-          <button class="btn" id="rec-5" data-rec="5">5</button>
-          <button class="btn" id="rec-inf" data-rec="inf">∞</button>
+        <div class="row" style="--n:5">
+          <button class="btn" id="rec-0" data-opt="rec" data-val="0">Off</button>
+          <button class="btn" id="rec-1" data-opt="rec" data-val="1">1</button>
+          <button class="btn" id="rec-3" data-opt="rec" data-val="3">3</button>
+          <button class="btn" id="rec-5" data-opt="rec" data-val="5">5</button>
+          <button class="btn" id="rec-inf" data-opt="rec" data-val="inf">∞</button>
         </div>
         <div class="stepper">
           <button class="btn" id="recMinus" aria-label="Fewer recoveries">−</button>
-          <div class="val sunken" id="recVal">1</div>
+          <div class="val sunken" id="recVal">Off</div>
           <button class="btn" id="recPlus" aria-label="More recoveries">+</button>
         </div>
-        <div class="opt-hint">When you hit a mine, Recover undoes that move and flags the mine. Wins that used a recovery don't count towards best times.</div>
+        <div class="opt-hint">When you hit a mine, Recover undoes that move and flags the mine.</div>
       </div>
       <div>
+        <div class="opt-label">Hold to flag</div>
+        <div class="row" style="--n:4">
+          <button class="btn" id="hold-200" data-opt="hold" data-val="200">Quick</button>
+          <button class="btn" id="hold-300" data-opt="hold" data-val="300">Normal</button>
+          <button class="btn" id="hold-450" data-opt="hold" data-val="450">Relaxed</button>
+          <button class="btn" id="hold-600" data-opt="hold" data-val="600">Slow</button>
+        </div>
+      </div>
+      <div>
+        <div class="opt-label">Question marks</div>
+        <div class="row" style="--n:2">
+          <button class="btn" id="qm-off" data-opt="qmarks" data-val="false">Off</button>
+          <button class="btn" id="qm-on" data-opt="qmarks" data-val="true">On</button>
+        </div>
+        <div class="opt-hint">When on, holding a flagged tile turns it into a “?”, and holding again clears it.</div>
+      </div>
+      <div>
+        <div class="opt-label">Sounds</div>
+        <div class="row" style="--n:2">
+          <button class="btn" id="snd-off" data-opt="sound" data-val="false">Off</button>
+          <button class="btn" id="snd-on" data-opt="sound" data-val="true">On</button>
+        </div>
+        <div class="opt-hint">iPhones play no sound with the silent switch on.</div>
+      </div>
+      <div class="opt-hint" style="margin-top:-6px">Wins that used a hint or a recovery count as wins but aren't timed, so best times stay fair.</div>
+
+      <div class="sect">Custom board</div>
+      <div>
+        <div class="opt-label">Columns</div>
+        <div class="stepper">
+          <button class="btn" id="colsMinus" aria-label="Fewer columns">−</button>
+          <div class="val sunken" id="colsVal">10</div>
+          <button class="btn" id="colsPlus" aria-label="More columns">+</button>
+        </div>
+      </div>
+      <div>
+        <div class="opt-label">Mines</div>
+        <div class="stepper">
+          <button class="btn" id="pctMinus" aria-label="Fewer mines">−</button>
+          <div class="val sunken" id="pctVal">18%</div>
+          <button class="btn" id="pctPlus" aria-label="More mines">+</button>
+        </div>
+        <div class="opt-hint" id="customHint">Rows fill the screen. Easy is about 12%, Medium 16%, Hard 21%.</div>
+      </div>
+
+      <div class="sect">Layout</div>
+      <div>
         <div class="opt-label">Space above game when moved down</div>
-        <div class="row" id="gapRow">
-          <button class="btn" id="gap-25" data-gap="25">Quarter</button>
-          <button class="btn" id="gap-33" data-gap="33">Third</button>
-          <button class="btn" id="gap-50" data-gap="50">Half</button>
+        <div class="row">
+          <button class="btn" id="gap-25" data-opt="gap" data-val="25">Quarter</button>
+          <button class="btn" id="gap-33" data-opt="gap" data-val="33">Third</button>
+          <button class="btn" id="gap-50" data-opt="gap" data-val="50">Half</button>
         </div>
         <div class="opt-hint">Leaves room at the top for a picture-in-picture video.</div>
       </div>
@@ -377,81 +674,130 @@ body {
   </div>
 </div>
 
+<div class="sheet-bg" id="statsSheet" hidden>
+  <div class="window" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+    <div class="titlebar">
+      <span class="tt" id="statsTitle">Stats</span>
+      <button class="btn tbtn" id="statsX" aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div id="statsList"></div>
+      <div class="row" style="--n:2">
+        <button class="btn done" id="statsReset">Reset stats</button>
+        <button class="btn done" id="statsDone">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (() => {
-  // Beginner is the classic fixed 9×9. Intermediate and Expert use fewer columns than the
-  // originals so cells stay a usable size, then add as many rows as the screen holds,
-  // keeping the classic mine density (40/256 ≈ 16%, 99/480 ≈ 21%).
+  // ---------- constants ----------
+  // Easy is the classic fixed 9×9. Medium/Hard/Custom set the columns and mine density;
+  // rows fill the screen so cells stay a usable size.
   const LEVELS = {
-    easy:   { cols: 9,  rows: 9, mines: 10 },
-    medium: { cols: 12, density: 40 / 256 },
-    hard:   { cols: 14, density: 99 / 480 },
+    easy:   { name: 'Easy',   cols: 9, rows: 9, mines: 10 },
+    medium: { name: 'Medium', cols: 12, density: 40 / 256 },
+    hard:   { name: 'Hard',   cols: 14, density: 99 / 480 },
+    custom: { name: 'Custom' },
   };
-  const HIDDEN = 0, FLAG = 1, OPEN = 2;
+  const ORDER = ['easy', 'medium', 'hard', 'custom'];
+  const HIDDEN = 0, FLAG = 1, OPEN = 2, QUEST = 3;
   const MAX_ZOOM = 4;
+  const SKINS = ['classic', 'glass', 'grass', 'terminal', 'minimal', 'midnight', 'radar'];
+  const DARK_ONLY = new Set(['midnight', 'radar']);
+  const TEXT_COUNTERS = new Set(['minimal', 'midnight']);
+  const ACCENTS = { blue: '#0a84ff', purple: '#bf5af2', pink: '#ff375f', orange: '#ff9f0a', green: '#30d158', teal: '#40c8e0' };
+  const PHOSPHORS = { green: '#39ff7a', amber: '#ffb000', white: '#e6e6e6', cyan: '#4fe0ff' };
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+    del(k) { try { localStorage.removeItem(k); } catch {} },
   };
   const $ = id => document.getElementById(id);
   const root = document.documentElement;
   const viewport = $('viewport'), grid = $('grid');
 
   // ---------- settings ----------
-  const settings = {
-    skin: ['classic', 'glass', 'grass'].includes(store.get('ms.skin')) ? store.get('ms.skin') : 'classic',
-    mode: ['system', 'light', 'dark'].includes(store.get('ms.mode')) ? store.get('ms.mode') : 'system',
-    rec: (() => { const v = store.get('ms.rec'); return v === 'inf' ? Infinity : (v !== null && !isNaN(+v) ? Math.max(0, +v) : 0); })(),
-    lowered: store.get('ms.lowered') === '1',
-    gap: ['25', '33', '50'].includes(store.get('ms.gap')) ? store.get('ms.gap') : '33',
-  };
+  const settings = (() => {
+    let saved = {};
+    try { saved = JSON.parse(store.get('ms.settings') || '{}') || {}; } catch {}
+    const legacy = k => store.get('ms.' + k);
+    const pick = (v, ok, def) => ok(v) ? v : def;
+    const recRaw = saved.rec ?? legacy('rec');
+    return {
+      skin: pick(saved.skin ?? legacy('skin'), v => SKINS.includes(v), 'classic'),
+      mode: pick(saved.mode ?? legacy('mode'), v => ['system', 'light', 'dark'].includes(v), 'system'),
+      rec: recRaw === 'inf' ? Infinity : (recRaw != null && !isNaN(+recRaw) ? Math.min(99, Math.max(0, +recRaw)) : 0),
+      lowered: (saved.lowered ?? legacy('lowered')) === true || legacy('lowered') === '1',
+      gap: pick(String(saved.gap ?? legacy('gap')), v => ['25', '33', '50'].includes(v), '33'),
+      acc: pick(saved.acc, v => v in ACCENTS, 'blue'),
+      ph: pick(saved.ph, v => v in PHOSPHORS, 'green'),
+      noguess: saved.noguess === true,
+      qmarks: saved.qmarks === true,
+      sound: saved.sound === true,
+      hold: pick(saved.hold, v => [200, 300, 450, 600].includes(v), 300),
+      ccols: pick(saved.ccols, v => Number.isInteger(v) && v >= 5 && v <= 30, 10),
+      cpct: pick(saved.cpct, v => Number.isInteger(v) && v >= 8 && v <= 30, 18),
+    };
+  })();
   const darkQuery = matchMedia('(prefers-color-scheme: dark)');
-  const isDark = () => settings.mode === 'dark' || (settings.mode === 'system' && darkQuery.matches);
+  const isDark = () => DARK_ONLY.has(settings.skin) || settings.mode === 'dark' || (settings.mode === 'system' && darkQuery.matches);
 
   function applySettings() {
     root.dataset.skin = settings.skin;
     root.dataset.dark = isDark() ? '1' : '0';
+    root.style.setProperty('--acc', ACCENTS[settings.acc]);
+    root.style.setProperty('--ph', PHOSPHORS[settings.ph]);
     root.style.setProperty('--gap', settings.gap + '%');
     $('desk').classList.toggle('lowered', settings.lowered);
+    $('modeBtn').hidden = DARK_ONLY.has(settings.skin);
     $('modeBtn').textContent = isDark() ? '☀︎' : '☾';
     $('modeBtn').setAttribute('aria-label', isDark() ? 'Switch to light mode' : 'Switch to dark mode');
     $('dockBtn').setAttribute('aria-pressed', String(settings.lowered));
     $('dockLabel').textContent = settings.lowered ? '⬆ Full height' : '⬇ Move down';
+    $('accGroup').hidden = !['minimal', 'midnight'].includes(settings.skin);
+    $('phGroup').hidden = settings.skin !== 'terminal';
+    $('modeNote').hidden = !DARK_ONLY.has(settings.skin);
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', getComputedStyle(root).getPropertyValue('--desk').trim());
-    // options sheet state
-    const press = (sel, attr, val) => document.querySelectorAll(sel).forEach(b =>
-      b.setAttribute('aria-pressed', String(b.dataset[attr] === val)));
-    press('#skinRow button', 'skin', settings.skin);
-    press('#modeRow button', 'mode', settings.mode);
-    press('#gapRow button', 'gap', settings.gap);
-    press('#recRow button', 'rec', settings.rec === Infinity ? 'inf' : String(settings.rec));
+    if (meta) meta.setAttribute('content', getComputedStyle(root).getPropertyValue('--desk').trim() || '#000');
+    document.querySelectorAll('[data-opt]').forEach(b => {
+      const cur = settings[b.dataset.opt];
+      const v = cur === Infinity ? 'inf' : String(cur);
+      b.setAttribute('aria-pressed', String(v === b.dataset.val));
+    });
     $('recVal').textContent = settings.rec === Infinity ? '∞' : settings.rec === 0 ? 'Off' : String(settings.rec);
-    if (level) render();
+    $('colsVal').textContent = String(settings.ccols);
+    $('pctVal').textContent = settings.cpct + '%';
+    if (level) { updateLabels(); render(); }
   }
   function saveSettings() {
-    store.set('ms.skin', settings.skin);
-    store.set('ms.mode', settings.mode);
-    store.set('ms.rec', settings.rec === Infinity ? 'inf' : String(settings.rec));
-    store.set('ms.lowered', settings.lowered ? '1' : '0');
-    store.set('ms.gap', settings.gap);
+    store.set('ms.settings', JSON.stringify({ ...settings, rec: settings.rec === Infinity ? 'inf' : settings.rec }));
     applySettings();
   }
   darkQuery.addEventListener?.('change', applySettings);
 
-  // ---------- sprites (drawn here, all original) ----------
-  const MINE = `<svg viewBox="0 0 16 16"><g stroke="#000" stroke-width="1.4"><line x1="8" y1="1.5" x2="8" y2="14.5"/><line x1="1.5" y1="8" x2="14.5" y2="8"/><line x1="3.4" y1="3.4" x2="12.6" y2="12.6"/><line x1="12.6" y1="3.4" x2="3.4" y2="12.6"/></g><circle cx="8" cy="8" r="4.6" fill="#000"/><rect x="5.6" y="5.6" width="2" height="2" fill="#fff"/></svg>`;
-  const FLAG_SVG = `<svg viewBox="0 0 16 16"><path d="M9 2 L3 5 L9 8 Z" fill="#f00"/><rect x="8.3" y="2" width="1.4" height="9" fill="#000"/><rect x="5.5" y="10.5" width="7" height="1.5" fill="#000"/><rect x="3.5" y="12" width="11" height="2" fill="#000"/></svg>`;
-  const WRONG = MINE.replace('</svg>', '<g stroke="#f00" stroke-width="1.6"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></g></svg>');
+  // ---------- sprites (drawn here, all original; colours come from the theme) ----------
+  const MINE = `<svg viewBox="0 0 16 16"><g style="stroke:var(--mine-c)" stroke-width="1.4"><line x1="8" y1="1.5" x2="8" y2="14.5"/><line x1="1.5" y1="8" x2="14.5" y2="8"/><line x1="3.4" y1="3.4" x2="12.6" y2="12.6"/><line x1="12.6" y1="3.4" x2="3.4" y2="12.6"/></g><circle cx="8" cy="8" r="4.6" style="fill:var(--mine-c)"/><rect x="5.6" y="5.6" width="2" height="2" style="fill:var(--mine-hi)"/></svg>`;
+  const BLIP = `<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="none" style="stroke:var(--mine-c)" stroke-width=".8" opacity=".35"/><circle cx="8" cy="8" r="5" fill="none" style="stroke:var(--mine-c)" stroke-width=".9" opacity=".6"/><circle cx="8" cy="8" r="2.8" style="fill:var(--mine-c)"/><circle cx="7.2" cy="7.2" r="1" style="fill:var(--mine-hi)"/></svg>`;
+  const FLAG_SVG = `<svg viewBox="0 0 16 16"><path d="M9 2 L3 5 L9 8 Z" style="fill:var(--flag-c)"/><g style="fill:var(--pole-c)"><rect x="8.3" y="2" width="1.4" height="9"/><rect x="5.5" y="10.5" width="7" height="1.5"/><rect x="3.5" y="12" width="11" height="2"/></g></svg>`;
+  const X_MARK = '<g stroke="#f00" stroke-width="1.6"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></g></svg>';
+  const BULB = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 1.8a4.6 4.6 0 0 0-2.7 8.3c.5.4.8 1 .8 1.6v.5h3.8v-.5c0-.6.3-1.2.8-1.6A4.6 4.6 0 0 0 8 1.8Z"/><path d="M6.3 14.2h3.4"/></svg>`;
+  const BARS = `<svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="9" width="3" height="5"/><rect x="6.5" y="5" width="3" height="9"/><rect x="11" y="2" width="3" height="12"/></svg>`;
+  const CLOCK = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.5V8l2.4 1.6"/></svg>`;
+  const mineSprite = () => settings.skin === 'radar' ? BLIP : MINE;
+  const wrongSprite = () => mineSprite().replace('</svg>', X_MARK);
 
   const FACES = {
-    smile: `<path d="M8 15.5 Q13 20.5 18 15.5" fill="none" stroke="#000" stroke-width="1.6"/><circle cx="9.5" cy="10" r="1.6"/><circle cx="16.5" cy="10" r="1.6"/>`,
-    oh:    `<circle cx="13" cy="17" r="2.8" fill="none" stroke="#000" stroke-width="1.6"/><circle cx="9.5" cy="10" r="1.6"/><circle cx="16.5" cy="10" r="1.6"/>`,
-    cool:  `<path d="M8 16 Q13 20.5 18 16" fill="none" stroke="#000" stroke-width="1.6"/><path d="M5 9 H21 M6 9 h6 v2.5 q-3 2 -6 0 Z M14 9 h6 v2.5 q-3 2 -6 0 Z" stroke="#000" stroke-width="1"/>`,
-    dead:  `<path d="M8 19 Q13 14.5 18 19" fill="none" stroke="#000" stroke-width="1.6"/><g stroke="#000" stroke-width="1.5"><line x1="7.5" y1="8" x2="11.5" y2="12"/><line x1="11.5" y1="8" x2="7.5" y2="12"/><line x1="14.5" y1="8" x2="18.5" y2="12"/><line x1="18.5" y1="8" x2="14.5" y2="12"/></g>`,
+    smile: `<path d="M8 15.5 Q13 20.5 18 15.5" fill="none" stroke-width="1.6"/><circle cx="9.5" cy="10" r="1.6"/><circle cx="16.5" cy="10" r="1.6"/>`,
+    oh:    `<circle cx="13" cy="17" r="2.8" fill="none" stroke-width="1.6"/><circle cx="9.5" cy="10" r="1.6"/><circle cx="16.5" cy="10" r="1.6"/>`,
+    cool:  `<path d="M8 16 Q13 20.5 18 16" fill="none" stroke-width="1.6"/><path d="M5 9 H21 M6 9 h6 v2.5 q-3 2 -6 0 Z M14 9 h6 v2.5 q-3 2 -6 0 Z" stroke-width="1"/>`,
+    dead:  `<path d="M8 19 Q13 14.5 18 19" fill="none" stroke-width="1.6"/><g stroke-width="1.5"><line x1="7.5" y1="8" x2="11.5" y2="12"/><line x1="11.5" y1="8" x2="7.5" y2="12"/><line x1="14.5" y1="8" x2="18.5" y2="12"/><line x1="18.5" y1="8" x2="14.5" y2="12"/></g>`,
+    think: `<path d="M9 17 H17" fill="none" stroke-width="1.6"/><circle cx="9.5" cy="10" r="1.6"/><circle cx="16.5" cy="10" r="1.6"/>`,
   };
-  const faceSVG = k => `<svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="11.5" style="fill:var(--smiley)" stroke="#000" stroke-width="1.3"/>${FACES[k]}</svg>`;
+  const faceSVG = k => `<svg viewBox="0 0 26 26"><g style="stroke:var(--face-ink);fill:var(--face-ink)"><circle cx="13" cy="13" r="11.5" style="fill:var(--smiley)" stroke-width="1.3"/>${FACES[k]}</g></svg>`;
 
   // 7-segment LED digits
   const SEG = {
@@ -463,103 +809,241 @@ body {
   const ON = { 0: 'abcdef', 1: 'bc', 2: 'abged', 3: 'abgcd', 4: 'fgbc', 5: 'afgcd', 6: 'afgedc', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg', '-': 'g' };
   const digit = ch => `<svg viewBox="0 0 13 23">${Object.entries(SEG).map(([s, p]) =>
     `<polygon points="${p}" style="fill:${ON[ch].includes(s) ? 'var(--led-on)' : 'var(--led-off)'}"/>`).join('')}</svg>`;
-  const ledCache = {};
-  function setLed(el, n) {
+  function setCounter(el, n, icon) {
+    const text = TEXT_COUNTERS.has(settings.skin);
     const s = n < 0 ? '-' + String(Math.min(99, -n)).padStart(2, '0') : String(Math.min(999, n)).padStart(3, '0');
-    if (ledCache[el.id] === s) return;
-    ledCache[el.id] = s;
-    el.innerHTML = [...s].map(digit).join('');
+    const key = (text ? 't' : 'l') + s;
+    if (el._k === key) return;
+    el._k = key;
+    el.classList.toggle('txt', text);
+    el.innerHTML = text ? `${icon}<span>${n}</span>` : [...s].map(digit).join('');
   }
 
   $('titleIcon').innerHTML = MINE;
   $('flagIcon').innerHTML = FLAG_SVG;
+  $('hintIcon').innerHTML = BULB;
+  $('statsBtn').innerHTML = BARS;
 
-  let level, rows, cols, mineCount, cells, status, exploded, startTime, endTime, flags, newBest;
-  let flagMode = false, pressing = -1;
-  let snapshot = null, recoveriesUsed = 0;
+  // ---------- game state ----------
+  let level, rows, cols, mineCount, cells, NB = [];
+  let status, exploded, flags, newBest, recorded, noGuessGame;
+  let elapsedMs = 0, runStart = null;
+  let snapshot = null, recoveriesUsed = 0, hintsUsed = 0;
+  let flagMode = false, pressing = -1, notice = '', genId = 0;
   let cellEls = [];
+  const ping = new Map(); let pingTimer = null;
+  let hl = -1, hlTimer = null;
 
-  // ---------- rules ----------
-  function neighbours(i) {
-    const r = Math.floor(i / cols), c = i % cols, out = [];
-    for (let dr = -1; dr <= 1; dr++)
-      for (let dc = -1; dc <= 1; dc++) {
-        if (!dr && !dc) continue;
-        const nr = r + dr, nc = c + dc;
-        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) out.push(nr * cols + nc);
-      }
-    return out;
+  const covered = c => c.state === HIDDEN || c.state === QUEST;
+
+  // ---------- clock (stops while the app is hidden) ----------
+  function startClock() { if (runStart == null && status === 'playing' && !document.hidden) runStart = Date.now(); }
+  function stopClock() { if (runStart != null) { elapsedMs += Date.now() - runStart; runStart = null; } }
+  const elapsedTotal = () => elapsedMs + (runStart != null ? Date.now() - runStart : 0);
+  const elapsed = () => Math.min(999, Math.floor(elapsedTotal() / 1000));
+
+  // ---------- board helpers ----------
+  function buildNeighbours() {
+    NB = new Array(rows * cols);
+    for (let i = 0; i < rows * cols; i++) {
+      const r = Math.floor(i / cols), c = i % cols, out = [];
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) out.push(nr * cols + nc);
+        }
+      NB[i] = out;
+    }
+  }
+  function computeAdj(arr) {
+    arr.forEach((c, i) => { c.adj = c.mine ? 0 : NB[i].reduce((n, j) => n + (arr[j].mine ? 1 : 0), 0); });
+    return arr;
   }
 
-  function placeMines(first) {
-    const avoid = new Set([first, ...neighbours(first)]);
-    let pool = cells.map((_, i) => i).filter(i => !avoid.has(i));
-    const m = mineCount;
-    if (pool.length < m) pool = cells.map((_, i) => i).filter(i => i !== first);
+  function placeRandom(first) {
+    cells.forEach(c => { c.mine = false; c.adj = 0; });
+    const avoid = new Set([first, ...NB[first]]);
+    let pool = [];
+    for (let i = 0; i < cells.length; i++) if (!avoid.has(i)) pool.push(i);
+    if (pool.length < mineCount) pool = cells.map((_, i) => i).filter(i => i !== first);
     for (let k = pool.length - 1; k > 0; k--) {
       const j = Math.floor(Math.random() * (k + 1));
       [pool[k], pool[j]] = [pool[j], pool[k]];
     }
-    for (let k = 0; k < m; k++) cells[pool[k]].mine = true;
-    cells.forEach((c, i) => { if (!c.mine) c.adj = neighbours(i).filter(n => cells[n].mine).length; });
+    for (let k = 0; k < mineCount; k++) cells[pool[k]].mine = true;
+    computeAdj(cells);
   }
 
+  // ---------- logic solver (used for no-guess boards and hints) ----------
+  // open[i] = known safe and opened, mine[i] = known mine. Uses each opened cell's number.
+  function deduce(open, mine) {
+    const safe = new Set(), mines = new Set(), cons = [];
+    for (let i = 0; i < open.length; i++) {
+      if (!open[i] || !cells[i].adj) continue;
+      let rem = cells[i].adj; const unk = [];
+      for (const n of NB[i]) { if (mine[n]) rem--; else if (!open[n]) unk.push(n); }
+      if (!unk.length) continue;
+      if (rem === 0) unk.forEach(n => safe.add(n));
+      else if (rem === unk.length) unk.forEach(n => mines.add(n));
+      else cons.push({ unk, rem, set: new Set(unk) });
+    }
+    if (safe.size || mines.size) return { safe: [...safe], mines: [...mines] };
+
+    // Pairs of overlapping constraints (covers the subset rule and 1-2 patterns).
+    const byCell = new Map();
+    cons.forEach((c, k) => c.unk.forEach(n => { if (!byCell.has(n)) byCell.set(n, []); byCell.get(n).push(k); }));
+    for (let a = 0; a < cons.length; a++) {
+      const A = cons[a], seen = new Set();
+      for (const n of A.unk) for (const b of byCell.get(n)) {
+        if (b === a || seen.has(b)) continue;
+        seen.add(b);
+        const B = cons[b];
+        const onlyB = B.unk.filter(x => !A.set.has(x));
+        const onlyA = A.unk.filter(x => !B.set.has(x));
+        const r = B.rem - A.rem;
+        if (r === onlyB.length && (onlyB.length || onlyA.length)) {
+          onlyB.forEach(x => mines.add(x)); onlyA.forEach(x => safe.add(x));
+        } else if (!onlyA.length && r === 0 && onlyB.length) {
+          onlyB.forEach(x => safe.add(x));
+        }
+      }
+    }
+    if (safe.size || mines.size) return { safe: [...safe], mines: [...mines] };
+
+    // Whole-board mine count.
+    let known = 0; const rest = [];
+    for (let i = 0; i < open.length; i++) { if (mine[i]) known++; else if (!open[i]) rest.push(i); }
+    const left = mineCount - known;
+    if (rest.length && left === 0) return { safe: rest, mines: [] };
+    if (rest.length && left === rest.length) return { safe: [], mines: rest };
+    return { safe: [], mines: [] };
+  }
+
+  function solvable(first) {
+    const N = cells.length, open = new Uint8Array(N), mine = new Uint8Array(N);
+    let opened = 0;
+    const openFrom = s => {
+      const st = [s];
+      while (st.length) {
+        const i = st.pop();
+        if (open[i] || mine[i]) continue;
+        open[i] = 1; opened++;
+        if (cells[i].adj === 0) for (const n of NB[i]) if (!open[n]) st.push(n);
+      }
+    };
+    openFrom(first);
+    const target = N - mineCount;
+    for (let guard = 0; guard < N * 2; guard++) {
+      if (opened === target) return true;
+      const { safe, mines } = deduce(open, mine);
+      if (!safe.length && !mines.length) return false;
+      mines.forEach(m => { mine[m] = 1; });
+      safe.forEach(openFrom);
+    }
+    return opened === target;
+  }
+
+  // Keeps dealing boards until one is solvable by logic; yields to the UI between batches.
+  function generateNoGuess(first, id) {
+    return new Promise(resolve => {
+      const deadline = performance.now() + 5000;
+      let tries = 0;
+      const step = () => {
+        if (id !== genId) return resolve(null);          // game was replaced; stop
+        const slice = performance.now() + 14;
+        do {
+          placeRandom(first); tries++;
+          if (solvable(first)) return resolve(true);
+        } while (performance.now() < slice);
+        if (performance.now() < deadline) setTimeout(step, 0);
+        else { placeRandom(first); resolve(false); }
+      };
+      setTimeout(step, 0);
+    });
+  }
+
+  // ---------- rules ----------
   function flood(start) {
     const stack = [start];
     while (stack.length) {
       const i = stack.pop(), c = cells[i];
-      if (c.state !== HIDDEN || c.mine) continue;
+      if (!covered(c) || c.mine) continue;
       c.state = OPEN;
-      if (c.adj === 0) for (const n of neighbours(i)) if (cells[n].state === HIDDEN) stack.push(n);
+      if (c.adj === 0) for (const n of NB[i]) if (covered(cells[n])) stack.push(n);
     }
   }
 
+  function begin(i) {
+    status = 'playing'; startClock();
+    flood(i); sfx('tick'); checkWin();
+  }
+
   function reveal(i) {
-    if (cells[i].state !== HIDDEN) return;
-    if (status === 'ready') { placeMines(i); status = 'playing'; startTime = Date.now(); }
+    if (!covered(cells[i])) return;
+    if (status === 'ready') {
+      if (noGuessGame) {
+        status = 'generating';
+        const id = genId;
+        generateNoGuess(i, id).then(ok => {
+          if (id !== genId || status !== 'generating') return;   // a new game was started meanwhile
+          if (!ok) { noGuessGame = false; notice = "Couldn't find a guess-free board in time, so this one may need a guess."; }
+          begin(i); render(); saveGame();
+        });
+        return;
+      }
+      placeRandom(i);
+      begin(i);
+      return;
+    }
     if (cells[i].mine) return lose(i);
-    flood(i);
+    flood(i); sfx('tick');
     checkWin();
   }
 
   function chord(i) {
     const c = cells[i];
     if (c.state !== OPEN || c.adj === 0) return;
-    const around = neighbours(i);
+    const around = NB[i];
     if (around.filter(n => cells[n].state === FLAG).length !== c.adj) return;
+    let opened = false;
     for (const n of around) {
-      if (cells[n].state !== HIDDEN) continue;
+      if (!covered(cells[n])) continue;
       if (cells[n].mine) return lose(n);
-      flood(n);
+      flood(n); opened = true;
     }
+    if (opened) sfx('tick');
     checkWin();
   }
 
-  function toggleFlag(i) {
+  function cycleMark(i) {
     const c = cells[i];
-    if (c.state === HIDDEN) { c.state = FLAG; flags++; buzz(); }
-    else if (c.state === FLAG) { c.state = HIDDEN; flags--; buzz(); }
+    if (c.state === HIDDEN) { c.state = FLAG; flags++; sfx('flag'); }
+    else if (c.state === FLAG) { flags--; c.state = settings.qmarks ? QUEST : HIDDEN; sfx('flag'); }
+    else if (c.state === QUEST) { c.state = HIDDEN; sfx('flag'); }
   }
 
+  const assisted = () => recoveriesUsed > 0 || hintsUsed > 0;
+
   function checkWin() {
+    if (status !== 'playing') return;
     if (cells.some(c => !c.mine && c.state !== OPEN)) return;
     cells.forEach(c => { if (c.mine) c.state = FLAG; });
     flags = mineCount;
-    status = 'won'; endTime = Date.now();
-    if (recoveriesUsed === 0) {
-      const t = Math.max(1, elapsed());
-      const best = bestTime();
-      if (!best || t < best) { store.set(bestKey(), String(t)); newBest = true; }
-    }
+    status = 'won'; stopClock();
+    recordResult(true);
+    sfx('win');
   }
 
-  function lose(i) { exploded = i; status = 'lost'; endTime = Date.now(); buzz(60); }
+  function lose(i) {
+    exploded = i; status = 'lost'; stopClock();
+    sfx('boom');
+    if (!canRecover()) recordResult(false);
+  }
   const over = () => status === 'won' || status === 'lost';
 
   // ---------- recover ----------
-  function takeSnapshot() {
-    snapshot = { cells: cells.map(c => ({ ...c })), flags };
-  }
+  function takeSnapshot() { snapshot = { cells: cells.map(c => ({ ...c })), flags }; }
   const recoveriesLeft = () => settings.rec === Infinity ? Infinity : Math.max(0, settings.rec - recoveriesUsed);
   const canRecover = () => status === 'lost' && !!snapshot && recoveriesLeft() > 0;
 
@@ -568,49 +1052,196 @@ body {
     const hit = exploded;
     cells = snapshot.cells;
     flags = snapshot.flags;
-    if (cells[hit] && cells[hit].state === HIDDEN) { cells[hit].state = FLAG; flags++; }
+    if (cells[hit] && covered(cells[hit])) { cells[hit].state = FLAG; flags++; }
     status = 'playing';
-    if (startTime && endTime) startTime += Date.now() - endTime;   // don't count time spent on the boom screen
-    endTime = null;
-    exploded = -1;
-    snapshot = null;
+    exploded = -1; snapshot = null;
     recoveriesUsed++;
+    startClock();
+    sfx('recover');
+    render(); saveGame();
+  }
+
+  // ---------- hint ----------
+  function hint() {
+    notice = '';
+    if (status === 'ready') { notice = 'Tap any tile to start. The first one is always safe.'; render(); return; }
+    if (status !== 'playing') return;
+    // What the player can see: opened tiles. Their flags aren't trusted (they may be wrong).
+    const N = cells.length, open = new Uint8Array(N), mine = new Uint8Array(N);
+    cells.forEach((c, i) => { if (c.state === OPEN) open[i] = 1; });
+    let pick = -1;
+    for (let guard = 0; guard < 50 && pick < 0; guard++) {
+      const { safe, mines } = deduce(open, mine);
+      if (!safe.length && !mines.length) break;
+      mines.forEach(m => { mine[m] = 1; });
+      const usable = safe.filter(s => !open[s]);
+      pick = usable.find(s => cells[s].state === HIDDEN) ?? usable[0] ?? -1;
+      if (pick < 0) safe.forEach(s => { open[s] = 1; });
+    }
+    if (pick < 0) {
+      // No logical move exists: give a safe tile next to the opened area.
+      const frontier = [], others = [];
+      cells.forEach((c, i) => {
+        if (c.mine || c.state === OPEN) return;
+        (NB[i].some(n => cells[n].state === OPEN) ? frontier : others).push(i);
+      });
+      const list = frontier.length ? frontier : others;
+      if (!list.length) return;
+      pick = list[Math.floor(Math.random() * list.length)];
+      notice = 'No safe move could be worked out here, so this one is a free tile.';
+    }
+    act(pick, () => {
+      if (cells[pick].state === FLAG) flags--;
+      cells[pick].state = HIDDEN;
+      hintsUsed++;
+      flood(pick);
+      sfx('hint');
+      checkWin();
+    });
+    hl = pick;
+    clearTimeout(hlTimer);
+    hlTimer = setTimeout(() => { hl = -1; render(); }, 1500);
     render();
   }
 
-  // ---------- input actions ----------
-  function tap(i) {
-    if (over() || i < 0) return;
-    const s = cells[i].state;
+  // ---------- actions ----------
+  // Runs a move: snapshot for Recover, sonar ping for Radar, then draw and save.
+  function act(origin, fn) {
+    if (status === 'generating') return;
+    const before = settings.skin === 'radar' && !reduceMotion.matches ? cells.map(c => c.state) : null;
     takeSnapshot();
-    if (s === OPEN) chord(i);
-    else if (flagMode) toggleFlag(i);
-    else if (s === HIDDEN) reveal(i);
-    render();
+    fn();
+    if (before) {
+      const r0 = Math.floor(origin / cols), c0 = origin % cols;
+      clearTimeout(pingTimer); ping.clear();
+      cells.forEach((c, i) => {
+        if (c.state === OPEN && before[i] !== OPEN) {
+          const d = Math.hypot(Math.floor(i / cols) - r0, (i % cols) - c0);
+          ping.set(i, Math.min(900, Math.round(d * 40)));
+        }
+      });
+      if (ping.size) pingTimer = setTimeout(() => { ping.clear(); render(); }, 1800);
+    }
+    render(); saveGame();
+  }
+
+  function tap(i) {
+    if (over() || i < 0 || status === 'generating') return;
+    notice = '';
+    const s = cells[i].state;
+    act(i, () => {
+      if (s === OPEN) chord(i);
+      else if (flagMode) cycleMark(i);
+      else if (covered(cells[i])) reveal(i);
+    });
   }
 
   function longPress(i) {
-    if (over() || i < 0) return;
-    takeSnapshot();
-    if (cells[i].state === OPEN) chord(i); else toggleFlag(i);
-    render();
+    if (over() || i < 0 || status === 'generating') return;
+    notice = '';
+    act(i, () => { if (cells[i].state === OPEN) chord(i); else cycleMark(i); });
   }
 
-  function elapsed() {
-    if (!startTime) return 0;
-    return Math.min(999, Math.floor(((endTime || Date.now()) - startTime) / 1000));
+  // ---------- stats ----------
+  const loadStats = () => { try { return JSON.parse(store.get('ms.stats') || '{}') || {}; } catch { return {}; } };
+  const statsKey = () => `${level}|${cols}x${rows}|${mineCount}${noGuessGame ? '|ng' : ''}`;
+  function boardLabel() {
+    return `${LEVELS[level].name} · ${cols}×${rows} · ${mineCount} mines${noGuessGame ? ' · no-guess' : ''}`;
   }
-  const bestKey = () => `ms.best.${level}.${cols}x${rows}`;
-  function bestTime() { const v = parseInt(store.get(bestKey()), 10); return v > 0 ? v : null; }
-  function buzz(ms = 8) { try { navigator.vibrate && navigator.vibrate(ms); } catch {} }
+  function recordResult(won) {
+    if (recorded) return;
+    recorded = true;
+    const st = loadStats(), k = statsKey();
+    const e = st[k] || { label: boardLabel(), level, played: 0, won: 0, streak: 0, bestStreak: 0, bestTime: null, totalTime: 0, timedWins: 0 };
+    e.played++;
+    if (won) {
+      e.won++; e.streak++; e.bestStreak = Math.max(e.bestStreak, e.streak);
+      if (!assisted()) {
+        const t = Math.max(1, elapsed());
+        e.timedWins++; e.totalTime += t;
+        if (!e.bestTime || t < e.bestTime) { e.bestTime = t; newBest = true; }
+      }
+    } else e.streak = 0;
+    st[k] = e;
+    store.set('ms.stats', JSON.stringify(st));
+  }
+  const bestTime = () => (loadStats()[statsKey()] || {}).bestTime || null;
 
+  // A game that was started and then walked away from counts as a loss.
+  function abandon() {
+    if (status === 'playing' || (status === 'lost' && !recorded)) recordResult(false);
+  }
+
+  function renderStats() {
+    const st = loadStats();
+    const keys = Object.keys(st).sort((a, b) =>
+      ORDER.indexOf(st[a].level) - ORDER.indexOf(st[b].level) || st[a].label.localeCompare(st[b].label));
+    if (!keys.length) {
+      $('statsList').innerHTML = '<div class="opt-hint">No finished games yet. Stats appear here after you win or lose.</div>';
+      return;
+    }
+    const fmt = s => s == null ? '–' : s + 's';
+    $('statsList').innerHTML = keys.map(k => {
+      const e = st[k];
+      const rate = e.played ? Math.round(e.won / e.played * 100) + '%' : '–';
+      const avg = e.timedWins ? Math.round(e.totalTime / e.timedWins) : null;
+      const cellsHtml = [
+        [e.played, 'Played'], [e.won, 'Won'], [rate, 'Win rate'], [e.won - e.timedWins, 'Assisted'],
+        [e.streak, 'Streak'], [e.bestStreak, 'Best streak'], [fmt(e.bestTime), 'Best time'], [fmt(avg), 'Avg time'],
+      ].map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
+      return `<div class="stat-card sunken" style="margin-bottom:8px"><h3>${e.label}</h3><div class="stat-grid">${cellsHtml}</div></div>`;
+    }).join('');
+  }
+
+  // ---------- save & resume ----------
+  const enc = arr => arr.map(c => String.fromCharCode(48 + (c.mine ? 4 : 0) + c.state)).join('');
+  const dec = s => [...s].map(ch => { const v = ch.charCodeAt(0) - 48; return { mine: !!(v & 4), adj: 0, state: v & 3 }; });
+
+  function saveGame() {
+    if (!level) return;
+    const keep = status === 'playing' || (status === 'lost' && canRecover());
+    if (!keep) { store.del('ms.save'); return; }
+    store.set('ms.save', JSON.stringify({
+      v: 1, level, cols, rows, mineCount, cells: enc(cells), status, exploded, flags,
+      ms: elapsedTotal(), recoveriesUsed, hintsUsed, ng: noGuessGame,
+      snap: snapshot && status === 'lost' ? { cells: enc(snapshot.cells), flags: snapshot.flags } : null,
+    }));
+  }
+
+  function restoreGame() {
+    let d = null;
+    try { d = JSON.parse(store.get('ms.save') || 'null'); } catch {}
+    if (!d || d.v !== 1 || !LEVELS[d.level] || typeof d.cells !== 'string' || d.cells.length !== d.cols * d.rows) return false;
+    if (d.status === 'lost') {
+      const left = settings.rec === Infinity ? Infinity : settings.rec - (d.recoveriesUsed || 0);
+      if (!d.snap || left <= 0) { store.del('ms.save'); return false; }
+    }
+    level = d.level; cols = d.cols; rows = d.rows; mineCount = d.mineCount;
+    buildBoard();
+    cells = computeAdj(dec(d.cells));
+    status = d.status === 'lost' ? 'lost' : 'playing';
+    exploded = d.exploded ?? -1; flags = d.flags || 0;
+    elapsedMs = d.ms || 0; runStart = null;
+    recoveriesUsed = d.recoveriesUsed || 0; hintsUsed = d.hintsUsed || 0;
+    noGuessGame = !!d.ng; recorded = false; newBest = false;
+    snapshot = d.snap ? { cells: computeAdj(dec(d.snap.cells)), flags: d.snap.flags } : null;
+    notice = 'Resumed your last game.';
+    startClock();
+    markLevel(); updateLabels(); render(); layout();
+    return true;
+  }
+
+  // ---------- setup ----------
   // Board size for a level on the current screen.
   function dims(key) {
     const L = LEVELS[key];
     if (L.rows) return { cols: L.cols, rows: L.rows, mines: L.mines };
-    const cell = Math.floor((vp.w - 2 * FRAME) / L.cols);
-    const r = Math.max(L.cols, Math.floor((vp.h - 2 * FRAME) / Math.max(1, cell)));
-    return { cols: L.cols, rows: r, mines: Math.round(L.density * L.cols * r) };
+    const c = key === 'custom' ? settings.ccols : L.cols;
+    const density = key === 'custom' ? settings.cpct / 100 : L.density;
+    const cell = Math.floor((vp.w - 2 * FRAME) / c);
+    const r = Math.max(5, Math.floor((vp.h - 2 * FRAME) / Math.max(1, cell)));
+    const m = Math.max(1, Math.min(c * r - 9, Math.round(density * c * r)));
+    return { cols: c, rows: r, mines: m };
   }
 
   function updateLabels() {
@@ -619,15 +1250,14 @@ body {
       b.querySelector('small').textContent = `${d.cols}×${d.rows} · ${d.mines}`;
     });
   }
-
-  // ---------- setup ----------
-  function setLevel(key) {
-    level = LEVELS[key] ? key : 'easy';
-    ({ rows, cols, mines: mineCount } = dims(level));
-    updateLabels();
-    store.set('ms.level', level);
+  function markLevel() {
     document.querySelectorAll('#levels button').forEach(b =>
       b.setAttribute('aria-pressed', String(b.dataset.level === level)));
+    store.set('ms.level', level);
+  }
+
+  function buildBoard() {
+    buildNeighbours();
     grid.style.gridTemplateColumns = `repeat(${cols}, var(--cell))`;
     grid.textContent = '';
     cellEls = [];
@@ -640,67 +1270,137 @@ body {
     }
     grid.appendChild(frag);
     zoom = 1; origin = { x: 0, y: 0 };
+    ping.clear(); hl = -1;
+  }
+
+  function setLevel(key) {
+    if (level) abandon();
+    level = LEVELS[key] ? key : 'easy';
+    ({ rows, cols, mines: mineCount } = dims(level));
+    buildBoard();
+    markLevel(); updateLabels();
     newGame();
     layout();
   }
 
   function newGame() {
     cells = Array.from({ length: rows * cols }, () => ({ mine: false, adj: 0, state: HIDDEN }));
-    status = 'ready'; exploded = -1; startTime = null; endTime = null; flags = 0; newBest = false;
-    pressing = -1; snapshot = null; recoveriesUsed = 0;
+    status = 'ready'; exploded = -1; flags = 0; newBest = false; recorded = false;
+    elapsedMs = 0; runStart = null;
+    pressing = -1; snapshot = null; recoveriesUsed = 0; hintsUsed = 0;
+    noGuessGame = settings.noguess;
+    notice = ''; genId++;
+    store.del('ms.save');
     render();
+  }
+
+  function restart() {
+    abandon();
+    const d = dims(level);
+    if (d.rows !== rows || d.cols !== cols || d.mines !== mineCount) setLevelNoAbandon(level);
+    else newGame();
+  }
+  function setLevelNoAbandon(key) {
+    level = key;
+    ({ rows, cols, mines: mineCount } = dims(level));
+    buildBoard(); markLevel(); updateLabels(); newGame(); layout();
   }
 
   // ---------- drawing ----------
   function render() {
+    if (!cells) return;
     const lost = status === 'lost';
     const recoverable = canRecover();
-    // While a recovery is on offer, don't give away where the other mines are.
-    const showAll = lost && !recoverable;
+    const showAll = lost && !recoverable;     // don't reveal mines while a recovery is on offer
+    const mineS = mineSprite(), wrongS = wrongSprite();
     for (let i = 0; i < cells.length; i++) {
       const c = cells[i];
       let cls, txt = '';
       const shownMine = (showAll && c.mine && c.state !== FLAG) || (lost && i === exploded);
       if (c.state === OPEN || shownMine) {
         cls = 'c o' + (i === exploded ? ' x' : '');
-        if (c.mine) txt = MINE;
+        if (c.mine) txt = mineS;
         else if (c.adj) { cls += ' n' + c.adj; txt = String(c.adj); }
       } else if (c.state === FLAG) {
         cls = 'c h';
-        if (showAll && !c.mine) { cls = 'c o'; txt = WRONG; } else txt = FLAG_SVG;
+        if (showAll && !c.mine) { cls = 'c o'; txt = wrongS; } else txt = FLAG_SVG;
+      } else if (c.state === QUEST) {
+        cls = i === pressing ? 'c p' : 'c h q'; txt = i === pressing ? '' : '?';
       } else {
         cls = i === pressing ? 'c p' : 'c h';
       }
       cls += cellEls[i]._alt;
+      if (ping.has(i)) cls += ' rv';
+      if (i === hl) cls += ' hl';
       const el = cellEls[i];
-      if (el._cls !== cls) { el.className = cls; el._cls = cls; }
+      if (el._cls !== cls) {
+        el.className = cls; el._cls = cls;
+        el.style.animationDelay = ping.has(i) ? ping.get(i) + 'ms' : '';
+      }
       if (el._txt !== txt) { el.innerHTML = txt; el._txt = txt; }
     }
-    setLed($('mines'), mineCount - flags);
-    setLed($('timer'), elapsed());
-    const faceKey = status === 'won' ? 'cool' : lost ? 'dead' : pressing >= 0 ? 'oh' : 'smile';
+    setCounter($('mines'), mineCount - flags, mineS);
+    setCounter($('timer'), elapsed(), CLOCK);
+    const faceKey = status === 'won' ? 'cool' : lost ? 'dead' : status === 'generating' ? 'think' : pressing >= 0 ? 'oh' : 'smile';
     if ($('face')._k !== faceKey) { $('face').innerHTML = faceSVG(faceKey); $('face')._k = faceKey; }
 
     const left = recoveriesLeft();
     $('recoverBtn').hidden = !recoverable;
     $('recoverBtn').textContent = `Recover (${left === Infinity ? '∞' : left})`;
+    $('flagBtn').setAttribute('aria-pressed', String(flagMode));
 
+    const parts = [];
+    if (hintsUsed) parts.push(`${hintsUsed} hint${hintsUsed === 1 ? '' : 's'}`);
+    if (recoveriesUsed) parts.push(`${recoveriesUsed} recover${recoveriesUsed === 1 ? 'y' : 'ies'}`);
+    const help = parts.join(' · ');
     const best = bestTime();
-    const usedNote = recoveriesUsed ? ` · ${recoveriesUsed} recover${recoveriesUsed === 1 ? 'y' : 'ies'}` : '';
-    $('status').textContent =
-      status === 'won' ? (recoveriesUsed
-        ? `Cleared in ${elapsed()}s${usedNote} (not a best time)`
-        : `Cleared in ${elapsed()}s${newBest ? ' · new best!' : ''}`) :
-      lost ? (recoverable ? 'You hit a mine.' : 'Game over. Tap the face to play again.') :
-      (status === 'playing' && recoveriesUsed ? `Recovered${usedNote}` :
-        (best ? `Best: ${best}s · ` : '') + 'Hold to flag · Pinch to zoom');
+    let text;
+    if (notice) text = notice;
+    else if (status === 'generating') text = 'Dealing a no-guess board…';
+    else if (status === 'won') text = assisted() ? `Cleared in ${elapsed()}s with ${help} (not timed)` : `Cleared in ${elapsed()}s${newBest ? ' · new best!' : ''}`;
+    else if (lost) text = recoverable ? 'You hit a mine.' : 'Game over. Tap the face to play again.';
+    else if (status === 'playing') text = help ? `Using ${help} · not timed` : (noGuessGame ? 'No-guess board' : (best ? `Best: ${best}s` : 'Good luck'));
+    else text = (best ? `Best: ${best}s · ` : '') + (noGuessGame ? 'No-guess · ' : '') + 'Hold to flag · Pinch to zoom';
+    if ($('status').textContent !== text) $('status').textContent = text;
   }
 
-  setInterval(() => { if (status === 'playing') setLed($('timer'), elapsed()); }, 250);
+  setInterval(() => { if (status === 'playing' && cells) setCounter($('timer'), elapsed(), CLOCK); }, 250);
 
   function setPressing(i) {
-    const v = i >= 0 && !over() && !flagMode && cells[i] && cells[i].state === HIDDEN ? i : -1;
+    const v = i >= 0 && !over() && status !== 'generating' && !flagMode && cells[i] && covered(cells[i]) ? i : -1;
     if (v !== pressing) { pressing = v; render(); }
+  }
+
+  // ---------- sounds (made on the fly, no files) ----------
+  let actx = null;
+  function sfx(kind) {
+    if (!settings.sound) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const t = actx.currentTime;
+      const tone = (f, dur, type, vol, when = 0, f2 = null) => {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = type; o.frequency.setValueAtTime(f, t + when);
+        if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + when + dur);
+        g.gain.setValueAtTime(vol, t + when);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + when + dur);
+        o.connect(g); g.connect(actx.destination);
+        o.start(t + when); o.stop(t + when + dur + 0.02);
+      };
+      if (kind === 'tick') tone(1500, 0.03, 'square', 0.03);
+      else if (kind === 'flag') tone(600, 0.08, 'triangle', 0.09, 0, 950);
+      else if (kind === 'hint') tone(880, 0.16, 'sine', 0.09, 0, 1320);
+      else if (kind === 'recover') tone(300, 0.28, 'sine', 0.12, 0, 900);
+      else if (kind === 'win') [523, 659, 784, 1047].forEach((f, k) => tone(f, 0.15, 'triangle', 0.09, k * 0.1));
+      else if (kind === 'boom') {
+        const len = Math.floor(0.55 * actx.sampleRate), buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
+        for (let k = 0; k < len; k++) d[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / len, 2);
+        const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+        src.buffer = buf; f.type = 'lowpass'; f.frequency.value = 900; g.gain.value = 0.4;
+        src.connect(f); f.connect(g); g.connect(actx.destination); src.start(t);
+      }
+    } catch {}
   }
 
   // ---------- zoom & pan ----------
@@ -730,10 +1430,13 @@ body {
     const r = viewport.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) return;
     vp = { w: r.width, h: r.height };
-    if (!level) return setLevel(store.get('ms.level') || 'easy');   // first measurement
+    if (!level) {                                   // first measurement: resume or start
+      if (!restoreGame()) setLevel(store.get('ms.level') || 'easy');
+      return;
+    }
     // Refit the board to the screen, but never in the middle of a game.
     const d = dims(level);
-    if (status === 'ready' && (d.rows !== rows || d.cols !== cols)) setLevel(level);
+    if (status === 'ready' && (d.rows !== rows || d.cols !== cols || d.mines !== mineCount)) setLevelNoAbandon(level);
     else { updateLabels(); layout(); }
   }).observe(viewport);
 
@@ -746,7 +1449,7 @@ body {
   }
 
   // ---------- touch handling ----------
-  // One finger: tap = dig, hold 0.3s = flag, move > 8px = pan.
+  // One finger: tap = dig, hold = flag, move > 8px = pan.
   // Two fingers: pinch zoom around the fingers. Nothing that moved ever counts as a tap.
   const pts = new Map();
   let mode = null, pressCell = -1, pressTimer = null, longFired = false;
@@ -768,7 +1471,7 @@ body {
       clearTimeout(pressTimer);
       pressTimer = setTimeout(() => {
         if (mode === 'press' && pressCell >= 0) { longFired = true; pressing = -1; longPress(pressCell); }
-      }, 300);
+      }, settings.hold);
     } else if (pts.size === 2) {
       clearTimeout(pressTimer);
       setPressing(-1);
@@ -822,45 +1525,71 @@ body {
   viewport.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('gesturestart', e => e.preventDefault());   // stop Safari page zoom
 
-  // ---------- controls ----------
-  $('face').addEventListener('click', () => {
-    const d = dims(level);
-    if (d.rows !== rows || d.cols !== cols) setLevel(level); else newGame();
+  // Pause when the app goes to the background, resume when it comes back.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { stopClock(); saveGame(); }
+    else { startClock(); render(); }
   });
+  window.addEventListener('pagehide', () => { stopClock(); saveGame(); });
+
+  // ---------- controls ----------
+  $('face').addEventListener('click', restart);
   $('levels').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (b && b.dataset.level !== level) setLevel(b.dataset.level);
   });
-  $('flagBtn').addEventListener('click', () => {
-    flagMode = !flagMode;
-    $('flagBtn').setAttribute('aria-pressed', String(flagMode));
-    $('flagLabel').textContent = 'Flag mode: ' + (flagMode ? 'on' : 'off');
-  });
+  $('flagBtn').addEventListener('click', () => { flagMode = !flagMode; render(); });
+  $('hintBtn').addEventListener('click', hint);
   $('recoverBtn').addEventListener('click', recover);
   $('dockBtn').addEventListener('click', () => { settings.lowered = !settings.lowered; saveSettings(); });
   $('modeBtn').addEventListener('click', () => { settings.mode = isDark() ? 'light' : 'dark'; saveSettings(); });
   $('unzoom').addEventListener('click', () => { zoom = 1; origin = { x: 0, y: 0 }; layout(); });
 
-  // options sheet
-  const openSheet = () => { $('sheet').hidden = false; $('sheetDone').focus(); };
-  const closeSheet = () => { $('sheet').hidden = true; $('optBtn').focus(); };
-  $('optBtn').addEventListener('click', openSheet);
-  $('sheetX').addEventListener('click', closeSheet);
-  $('sheetDone').addEventListener('click', closeSheet);
-  $('sheet').addEventListener('click', e => { if (e.target === $('sheet')) closeSheet(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sheet').hidden) closeSheet(); });
-  $('skinRow').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { settings.skin = b.dataset.skin; saveSettings(); } });
-  $('modeRow').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { settings.mode = b.dataset.mode; saveSettings(); } });
-  $('gapRow').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { settings.gap = b.dataset.gap; saveSettings(); } });
-  $('recRow').addEventListener('click', e => {
-    const b = e.target.closest('button');
-    if (b) { settings.rec = b.dataset.rec === 'inf' ? Infinity : +b.dataset.rec; saveSettings(); }
+  // sheets
+  let opener = null;
+  const openSheet = (id, focusId) => { opener = document.activeElement; $(id).hidden = false; $(focusId).focus(); };
+  const closeSheets = () => {
+    $('sheet').hidden = true; $('statsSheet').hidden = true;
+    $('statsReset').textContent = 'Reset stats'; resetArmed = false;
+    opener?.focus?.();
+  };
+  $('optBtn').addEventListener('click', () => openSheet('sheet', 'sheetDone'));
+  $('statsBtn').addEventListener('click', () => { renderStats(); openSheet('statsSheet', 'statsDone'); });
+  ['sheetX', 'sheetDone', 'statsX', 'statsDone'].forEach(id => $(id).addEventListener('click', closeSheets));
+  ['sheet', 'statsSheet'].forEach(id => $(id).addEventListener('click', e => { if (e.target === $(id)) closeSheets(); }));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheets(); });
+
+  let resetArmed = false;
+  $('statsReset').addEventListener('click', () => {
+    if (!resetArmed) { resetArmed = true; $('statsReset').textContent = 'Tap again to reset'; return; }
+    store.del('ms.stats'); resetArmed = false; $('statsReset').textContent = 'Stats reset';
+    renderStats(); render();
   });
+
+  // option chips
+  const BOOL = new Set(['noguess', 'qmarks', 'sound']);
+  $('sheet').addEventListener('click', e => {
+    const b = e.target.closest('[data-opt]');
+    if (!b) return;
+    const k = b.dataset.opt, v = b.dataset.val;
+    settings[k] = BOOL.has(k) ? v === 'true' : k === 'rec' ? (v === 'inf' ? Infinity : +v) : k === 'hold' ? +v : v;
+    saveSettings();
+    if (k === 'noguess' && status === 'ready') { noGuessGame = settings.noguess; render(); }
+  });
+  const step = (key, delta, min, max) => () => {
+    settings[key] = Math.min(max, Math.max(min, settings[key] + delta));
+    saveSettings();
+    if (level === 'custom' && status === 'ready') setLevelNoAbandon('custom');
+  };
+  $('colsMinus').addEventListener('click', step('ccols', -1, 5, 30));
+  $('colsPlus').addEventListener('click', step('ccols', 1, 5, 30));
+  $('pctMinus').addEventListener('click', step('cpct', -1, 8, 30));
+  $('pctPlus').addEventListener('click', step('cpct', 1, 8, 30));
   $('recMinus').addEventListener('click', () => {
     settings.rec = settings.rec === Infinity ? 99 : Math.max(0, settings.rec - 1); saveSettings();
   });
   $('recPlus').addEventListener('click', () => {
-    settings.rec = settings.rec === Infinity ? Infinity : settings.rec >= 99 ? Infinity : settings.rec + 1; saveSettings();
+    settings.rec = settings.rec === Infinity || settings.rec >= 99 ? Infinity : settings.rec + 1; saveSettings();
   });
 
   applySettings();
@@ -870,7 +1599,7 @@ body {
     const hadWorker = !!navigator.serviceWorker.controller;
     let reloaded = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (hadWorker && !reloaded) { reloaded = true; location.reload(); }   // apply updates straight away
+      if (hadWorker && !reloaded) { reloaded = true; saveGame(); location.reload(); }
     });
     navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {});
   }
