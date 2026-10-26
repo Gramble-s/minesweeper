@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Minesweeper">
+<meta name="theme-color" content="#e9ecf1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12151b" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Minesweeper</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one-screen app. Header (counters + face), level switch, a pinch-zoomable field filling the rest, flag toggle at the thumb. */
+:root {
+  --bg: #e9ecf1;
+  --fg: #1c222b;
+  --muted: #5d6877;
+  --panel: #dde2e9;
+  --field: #cfd6df;
+  --tile: #9fabbb;
+  --tile-edge: #8693a5;
+  --open: #e4e8ee;
+  --line: #c3cbd6;
+  --led-bg: #16191e;
+  --led: #ff4536;
+  --boom: #ff5a4a;
+  --accent: #2f5fd0;
+  --flag-on: #fbe1de;
+  --n1: #2457d6; --n2: #1d8a3c; --n3: #d42a20; --n4: #2b2f8f;
+  --n5: #8a2b17; --n6: #0f8585; --n7: #1c222b; --n8: #6b7380;
+  --round: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --led-face: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  height: 100%;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151b; --fg: #e7ebf1; --muted: #8d97a6; --panel: #1c2129;
+    --field: #262c36; --tile: #4a5464; --tile-edge: #3c4553; --open: #1b2028; --line: #2c333e;
+    --led-bg: #07080a; --led: #ff4536; --boom: #c8392d; --accent: #7aa2ff; --flag-on: #3a2220;
+    --n1: #6f9bff; --n2: #4cc46e; --n3: #ff6a5e; --n4: #a7a8ff;
+    --n5: #e08a5f; --n6: #3fd0cf; --n7: #e7ebf1; --n8: #9aa3b0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151b; --fg: #e7ebf1; --muted: #8d97a6; --panel: #1c2129;
+  --field: #262c36; --tile: #4a5464; --tile-edge: #3c4553; --open: #1b2028; --line: #2c333e;
+  --led-bg: #07080a; --led: #ff4536; --boom: #c8392d; --accent: #7aa2ff; --flag-on: #3a2220;
+  --n1: #6f9bff; --n2: #4cc46e; --n3: #ff6a5e; --n4: #a7a8ff;
+  --n5: #e08a5f; --n6: #3fd0cf; --n7: #e7ebf1; --n8: #9aa3b0;
+  color-scheme: dark;
+}
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--round);
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+.app {
+  height: 100%; box-sizing: border-box;
+  max-width: 560px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 12px;
+  padding-block: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+.led {
+  justify-self: start;
+  font: 700 28px/1 var(--led-face);
+  font-variant-numeric: tabular-nums;
+  color: var(--led); background: var(--led-bg);
+  padding: 7px 10px; border-radius: 8px; letter-spacing: 1px;
+  text-shadow: 0 0 6px color-mix(in srgb, var(--led) 45%, transparent);
+}
+.led.right { justify-self: end; }
+.face {
+  width: 56px; height: 56px; font-size: 32px; line-height: 1;
+  border: 0; border-radius: 14px; background: var(--panel); cursor: pointer;
+  box-shadow: inset 0 -3px 0 var(--tile-edge);
+}
+.face:active { transform: translateY(1px); box-shadow: inset 0 -1px 0 var(--tile-edge); }
+.levels {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--panel); border-radius: 10px; padding: 3px; gap: 3px;
+}
+.levels button {
+  border: 0; background: transparent; color: var(--fg);
+  font: 600 15px/1 var(--round); padding: 9px 0 8px; border-radius: 8px; cursor: pointer;
+}
+.levels button small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.levels button[aria-pressed="true"] { background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.viewport {
+  position: relative; flex: 1; min-height: 0;
+  overflow: hidden; touch-action: none; border-radius: 10px;
+}
+.grid {
+  position: absolute; left: 0; top: 0;
+  display: grid; transform-origin: 0 0;
+  background: var(--field);
+  grid-auto-rows: var(--cell);
+  will-change: transform;
+}
+.c {
+  width: var(--cell); height: var(--cell);
+  box-sizing: border-box;
+  display: grid; place-items: center;
+  font-family: var(--round); font-weight: 800;
+  font-size: calc(var(--cell) * 0.62); line-height: 1;
+}
+.c.h {
+  background: var(--tile);
+  border-radius: calc(var(--cell) * 0.14);
+  box-shadow: inset 0 calc(var(--cell) * -0.07) 0 var(--tile-edge);
+  border: calc(var(--cell) * 0.045) solid var(--field);
+  background-clip: padding-box;
+}
+.c.o { background: var(--open); box-shadow: inset 0 0 0 0.5px var(--line); }
+.c.x { background: var(--boom); }
+.c .e { font-size: calc(var(--cell) * 0.55); }
+.n1 { color: var(--n1) } .n2 { color: var(--n2) } .n3 { color: var(--n3) } .n4 { color: var(--n4) }
+.n5 { color: var(--n5) } .n6 { color: var(--n6) } .n7 { color: var(--n7) } .n8 { color: var(--n8) }
+.unzoom {
+  position: absolute; top: 8px; right: 8px;
+  width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer;
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
+  color: var(--fg); font-size: 18px;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+.status {
+  text-align: center; font-size: 14px; color: var(--muted);
+  min-height: 18px; font-variant-numeric: tabular-nums;
+}
+.flag {
+  border: 0; border-radius: 12px; padding: 14px; cursor: pointer;
+  font: 650 17px/1 var(--round);
+  background: var(--panel); color: var(--fg);
+  display: flex; gap: 8px; justify-content: center; align-items: center;
+}
+.flag[aria-pressed="true"] { background: var(--flag-on); color: var(--n3); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="led" id="mines" aria-label="Mines left">010</div>
+    <button class="face" id="face" aria-label="New game">🙂</button>
+    <div class="led right" id="timer" aria-label="Seconds">000</div>
+  </div>
+
+  <div class="levels" id="levels" role="group" aria-label="Difficulty">
+    <button id="lv-easy" data-level="easy">Easy<small>9×9 · 10</small></button>
+    <button id="lv-medium" data-level="medium">Medium<small>16×16 · 40</small></button>
+    <button id="lv-hard" data-level="hard">Hard<small>16×30 · 99</small></button>
+  </div>
+
+  <div class="viewport" id="viewport">
+    <div class="grid" id="grid"></div>
+    <button class="unzoom" id="unzoom" aria-label="Reset zoom" hidden>⤡</button>
+  </div>
+
+  <div class="status" id="status"></div>
+  <button class="flag" id="flagBtn" aria-pressed="false">🚩 <span id="flagLabel">Flag mode: off</span></button>
+</div>
+
+<script>
+(() => {
+  const LEVELS = {
+    easy:   { cols: 9,  rows: 9,  mines: 10 },
+    medium: { cols: 16, rows: 16, mines: 40 },
+    hard:   { cols: 16, rows: 30, mines: 99 },  // classic 30×16, stood upright for phones
+  };
+  const HIDDEN = 0, FLAG = 1, OPEN = 2;
+  const MAX_ZOOM = 4;
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  const $ = id => document.getElementById(id);
+  const viewport = $('viewport'), grid = $('grid');
+
+  let level, rows, cols, cells, status, exploded, startTime, endTime, flags, newBest;
+  let flagMode = false;
+  let cellEls = [];
+
+  // ---------- rules ----------
+  function neighbours(i) {
+    const r = Math.floor(i / cols), c = i % cols, out = [];
+    for (let dr = -1; dr <= 1; dr++)
+      for (let dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) out.push(nr * cols + nc);
+      }
+    return out;
+  }
+
+  function placeMines(first) {
+    const avoid = new Set([first, ...neighbours(first)]);
+    let pool = cells.map((_, i) => i).filter(i => !avoid.has(i));
+    const m = LEVELS[level].mines;
+    if (pool.length < m) pool = cells.map((_, i) => i).filter(i => i !== first);
+    for (let k = pool.length - 1; k > 0; k--) {           // Fisher–Yates
+      const j = Math.floor(Math.random() * (k + 1));
+      [pool[k], pool[j]] = [pool[j], pool[k]];
+    }
+    for (let k = 0; k < m; k++) cells[pool[k]].mine = true;
+    cells.forEach((c, i) => { if (!c.mine) c.adj = neighbours(i).filter(n => cells[n].mine).length; });
+  }
+
+  function flood(start) {
+    const stack = [start];
+    while (stack.length) {
+      const i = stack.pop(), c = cells[i];
+      if (c.state !== HIDDEN || c.mine) continue;
+      c.state = OPEN;
+      if (c.adj === 0) for (const n of neighbours(i)) if (cells[n].state === HIDDEN) stack.push(n);
+    }
+  }
+
+  function reveal(i) {
+    if (cells[i].state !== HIDDEN) return;
+    if (status === 'ready') { placeMines(i); status = 'playing'; startTime = Date.now(); }
+    if (cells[i].mine) return lose(i);
+    flood(i);
+    checkWin();
+  }
+
+  function chord(i) {
+    const c = cells[i];
+    if (c.state !== OPEN || c.adj === 0) return;
+    const around = neighbours(i);
+    if (around.filter(n => cells[n].state === FLAG).length !== c.adj) return;
+    for (const n of around) {
+      if (cells[n].state !== HIDDEN) continue;
+      if (cells[n].mine) return lose(n);
+      flood(n);
+    }
+    checkWin();
+  }
+
+  function toggleFlag(i) {
+    const c = cells[i];
+    if (c.state === HIDDEN) { c.state = FLAG; flags++; buzz(); }
+    else if (c.state === FLAG) { c.state = HIDDEN; flags--; buzz(); }
+  }
+
+  function checkWin() {
+    if (cells.some(c => !c.mine && c.state !== OPEN)) return;
+    cells.forEach(c => { if (c.mine) c.state = FLAG; });
+    flags = LEVELS[level].mines;
+    status = 'won'; endTime = Date.now();
+    const t = Math.max(1, elapsed());
+    const best = bestTime();
+    if (!best || t < best) { store.set('ms.best.' + level, String(t)); newBest = true; }
+  }
+
+  function lose(i) { exploded = i; status = 'lost'; endTime = Date.now(); buzz(60); }
+
+  const over = () => status === 'won' || status === 'lost';
+
+  function tap(i) {
+    if (over() || i < 0) return;
+    const s = cells[i].state;
+    if (s === OPEN) chord(i);
+    else if (flagMode) toggleFlag(i);
+    else if (s === HIDDEN) reveal(i);
+    render();
+  }
+
+  function longPress(i) {
+    if (over() || i < 0) return;
+    if (cells[i].state === OPEN) chord(i); else toggleFlag(i);
+    render();
+  }
+
+  function elapsed() {
+    if (!startTime) return 0;
+    return Math.min(999, Math.floor(((endTime || Date.now()) - startTime) / 1000));
+  }
+  function bestTime() { const v = parseInt(store.get('ms.best.' + level), 10); return v > 0 ? v : null; }
+  function buzz(ms = 8) { try { navigator.vibrate && navigator.vibrate(ms); } catch {} }
+
+  // ---------- setup ----------
+  function setLevel(key) {
+    level = LEVELS[key] ? key : 'easy';
+    ({ rows, cols } = LEVELS[level]);
+    store.set('ms.level', level);
+    document.querySelectorAll('#levels button').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.level === level)));
+    grid.style.gridTemplateColumns = `repeat(${cols}, var(--cell))`;
+    grid.textContent = '';
+    cellEls = [];
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < rows * cols; i++) {
+      const d = document.createElement('div');
+      d._cls = ''; d._txt = '';
+      frag.appendChild(d); cellEls.push(d);
+    }
+    grid.appendChild(frag);
+    zoom = 1; origin = { x: 0, y: 0 };
+    newGame();
+    layout();
+  }
+
+  function newGame() {
+    cells = Array.from({ length: rows * cols }, () => ({ mine: false, adj: 0, state: HIDDEN }));
+    status = 'ready'; exploded = -1; startTime = null; endTime = null; flags = 0; newBest = false;
+    render();
+  }
+
+  // ---------- drawing ----------
+  function render() {
+    const lost = status === 'lost';
+    for (let i = 0; i < cells.length; i++) {
+      const c = cells[i];
+      let cls, txt = '';
+      const shownMine = lost && c.mine && c.state !== FLAG;
+      if (c.state === OPEN || shownMine) {
+        cls = 'c o' + (i === exploded ? ' x' : '');
+        if (c.mine) txt = '<span class="e">💣</span>';
+        else if (c.adj) { cls += ' n' + c.adj; txt = String(c.adj); }
+      } else if (c.state === FLAG) {
+        cls = 'c h';
+        txt = lost && !c.mine ? '<span class="e">❌</span>' : '<span class="e">🚩</span>';
+      } else cls = 'c h';
+      const el = cellEls[i];
+      if (el._cls !== cls) { el.className = cls; el._cls = cls; }
+      if (el._txt !== txt) { el.innerHTML = txt; el._txt = txt; }
+    }
+    const left = LEVELS[level].mines - flags;
+    $('mines').textContent = left < 0 ? '-' + String(-left).padStart(2, '0') : String(left).padStart(3, '0');
+    $('face').textContent = status === 'won' ? '😎' : lost ? '😵' : '🙂';
+    $('timer').textContent = String(elapsed()).padStart(3, '0');
+    const best = bestTime();
+    $('status').textContent =
+      status === 'won' ? `Cleared in ${elapsed()}s${newBest ? ' · new best' : ''}` :
+      lost ? 'Boom. Tap the face to go again.' :
+      (best ? `Best ${best}s · ` : '') + 'Hold to flag · Pinch to zoom';
+  }
+
+  setInterval(() => { if (status === 'playing') $('timer').textContent = String(elapsed()).padStart(3, '0'); }, 250);
+
+  // ---------- zoom & pan ----------
+  let zoom = 1, origin = { x: 0, y: 0 }, vp = { w: 0, h: 0 }, livePos = { x: 0, y: 0 };
+
+  const baseCell = () => Math.floor(Math.min(vp.w / cols, vp.h / rows));
+  const laidSize = z => { const s = baseCell() * z; return { w: s * cols, h: s * rows }; };
+
+  function clamp(p, size) {
+    const ax = (v, c, view) => c <= view ? (view - c) / 2 : Math.min(0, Math.max(view - c, v));
+    return { x: ax(p.x, size.w, vp.w), y: ax(p.y, size.h, vp.h) };
+  }
+
+  // Lay out at the committed zoom; optionally show a live scale/position during a gesture.
+  function layout(scale = 1, pos = null) {
+    const laid = laidSize(zoom);
+    grid.style.setProperty('--cell', baseCell() * zoom + 'px');
+    const p = clamp(pos || origin, { w: laid.w * scale, h: laid.h * scale });
+    livePos = p;
+    if (!pos) origin = p;
+    grid.style.transform = `translate(${p.x}px, ${p.y}px) scale(${scale})`;
+    $('unzoom').hidden = zoom <= 1.01;
+  }
+
+  new ResizeObserver(() => {
+    const r = viewport.getBoundingClientRect();
+    vp = { w: r.width, h: r.height };
+    layout();
+  }).observe(viewport);
+
+  function cellAt(x, y) {
+    const r = grid.getBoundingClientRect();
+    if (x < r.left || y < r.top || x >= r.right || y >= r.bottom) return -1;
+    const c = Math.floor((x - r.left) / (r.width / cols));
+    const rr = Math.floor((y - r.top) / (r.height / rows));
+    return rr * cols + c;
+  }
+
+  // ---------- touch handling ----------
+  // One finger: tap = dig, hold 0.3s = flag, move > 8px = pan.
+  // Two fingers: pinch zoom around the fingers. Nothing that moved ever counts as a tap.
+  const pts = new Map();
+  let mode = null, pressCell = -1, pressTimer = null, longFired = false;
+  let start = null, pinch = null, liveScale = 1;
+
+  const mid = () => { const [a, b] = [...pts.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
+  const dist = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
+  const local = p => { const r = viewport.getBoundingClientRect(); return { x: p.x - r.left, y: p.y - r.top }; };
+
+  viewport.addEventListener('pointerdown', e => {
+    if (e.target.closest('.unzoom')) return;
+    try { viewport.setPointerCapture(e.pointerId); } catch {}
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) {
+      mode = 'press'; longFired = false;
+      start = { x: e.clientX, y: e.clientY, origin: { ...origin } };
+      pressCell = cellAt(e.clientX, e.clientY);
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => {
+        if (mode === 'press' && pressCell >= 0) { longFired = true; longPress(pressCell); }
+      }, 300);
+    } else if (pts.size === 2) {
+      clearTimeout(pressTimer);
+      mode = 'pinch';
+      pinch = { d0: dist(), m0: local(mid()), o0: { ...origin } };
+      liveScale = 1;
+    }
+  });
+
+  viewport.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (mode === 'press' && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) {
+      clearTimeout(pressTimer);
+      mode = 'pan';
+    }
+    if (mode === 'pan' && pts.size === 1) {
+      layout(1, { x: start.origin.x + e.clientX - start.x, y: start.origin.y + e.clientY - start.y });
+    } else if (mode === 'pinch' && pts.size >= 2) {
+      liveScale = Math.min(Math.max(dist() / pinch.d0, 1 / zoom), MAX_ZOOM / zoom);
+      const m = local(mid());
+      layout(liveScale, {
+        x: m.x - (pinch.m0.x - pinch.o0.x) * liveScale,
+        y: m.y - (pinch.m0.y - pinch.o0.y) * liveScale,
+      });
+    }
+  });
+
+  function pointerEnd(e) {
+    if (!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if (mode === 'press' && pts.size === 0) {
+      clearTimeout(pressTimer);
+      if (!longFired && e.type === 'pointerup') tap(pressCell);
+      mode = null;
+    } else if (mode === 'pan' && pts.size === 0) {
+      origin = livePos; mode = null;
+    } else if (mode === 'pinch' && pts.size < 2) {
+      zoom = Math.min(Math.max(zoom * liveScale, 1), MAX_ZOOM);
+      origin = livePos;
+      layout();
+      mode = pts.size ? 'dead' : null;   // ignore the leftover finger until it lifts
+    } else if (mode === 'dead' && pts.size === 0) {
+      mode = null;
+    }
+  }
+  viewport.addEventListener('pointerup', pointerEnd);
+  viewport.addEventListener('pointercancel', pointerEnd);
+  viewport.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('gesturestart', e => e.preventDefault());   // stop Safari page zoom
+  document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+
+  // ---------- controls ----------
+  $('face').addEventListener('click', newGame);
+  $('levels').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b && b.dataset.level !== level) setLevel(b.dataset.level);
+  });
+  $('flagBtn').addEventListener('click', () => {
+    flagMode = !flagMode;
+    $('flagBtn').setAttribute('aria-pressed', String(flagMode));
+    $('flagLabel').textContent = 'Flag mode: ' + (flagMode ? 'on' : 'off');
+  });
+  $('unzoom').addEventListener('click', () => { zoom = 1; origin = { x: 0, y: 0 }; layout(); });
+
+  // Offline support when hosted as a web app (ignored where unsupported).
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  setLevel(store.get('ms.level') || 'easy');
+})();
+</script>
+
+</body>
+</html>
