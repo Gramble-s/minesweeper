@@ -1,5 +1,6 @@
-// Caches the whole game so it works offline. Bump CACHE when you change any file.
-const CACHE = 'minesweeper-v2';
+// Online: always load the latest page (and refresh the offline copy).
+// Offline: fall back to the saved copy.
+const CACHE = 'minesweeper-v3';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -15,10 +16,21 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: true })
-      .then(hit => hit || (e.request.mode === 'navigate' ? caches.match('./index.html') : null))
-      .then(hit => hit || fetch(e.request))
+    fetch(req, { cache: 'no-cache' })
+      .then(res => {
+        if (res.ok && new URL(req.url).origin === location.origin) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(req, copy));
+        }
+        return res;
+      })
+      .catch(() =>
+        caches.match(req, { ignoreSearch: true })
+          .then(hit => hit || (req.mode === 'navigate' ? caches.match('./index.html') : undefined))
+      )
   );
 });

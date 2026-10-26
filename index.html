@@ -533,7 +533,12 @@ body {
 
   // Offline support when hosted as a web app (ignored where unsupported).
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    const hadWorker = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadWorker && !reloaded) { reloaded = true; location.reload(); }   // apply updates straight away
+    });
+    navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {});
   }
 
   setLevel(store.get('ms.level') || 'easy');
