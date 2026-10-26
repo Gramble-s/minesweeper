@@ -169,8 +169,8 @@ body {
 
       <div class="levels" id="levels" role="group" aria-label="Difficulty">
         <button class="btn" id="lv-easy" data-level="easy">Beginner<small>9×9 · 10</small></button>
-        <button class="btn" id="lv-medium" data-level="medium">Intermediate<small>16×16 · 40</small></button>
-        <button class="btn" id="lv-hard" data-level="hard">Expert<small>16×30 · 99</small></button>
+        <button class="btn" id="lv-medium" data-level="medium">Intermediate<small>&nbsp;</small></button>
+        <button class="btn" id="lv-hard" data-level="hard">Expert<small>&nbsp;</small></button>
       </div>
 
       <div class="viewport" id="viewport">
@@ -186,10 +186,13 @@ body {
 
 <script>
 (() => {
+  // Beginner is the classic fixed 9×9. Intermediate and Expert use fewer columns than the
+  // originals so cells stay a usable size, then add as many rows as the screen holds,
+  // keeping the classic mine density (40/256 ≈ 16%, 99/480 ≈ 21%).
   const LEVELS = {
-    easy:   { cols: 9,  rows: 9,  mines: 10 },
-    medium: { cols: 16, rows: 16, mines: 40 },
-    hard:   { cols: 16, rows: 30, mines: 99 },  // classic 30×16, stood upright for phones
+    easy:   { cols: 9,  rows: 9, mines: 10 },
+    medium: { cols: 12, density: 40 / 256 },
+    hard:   { cols: 14, density: 99 / 480 },
   };
   const HIDDEN = 0, FLAG = 1, OPEN = 2;
   const MAX_ZOOM = 4;
@@ -235,7 +238,7 @@ body {
   $('titleIcon').innerHTML = MINE;
   $('flagIcon').innerHTML = FLAG_SVG;
 
-  let level, rows, cols, cells, status, exploded, startTime, endTime, flags, newBest;
+  let level, rows, cols, mineCount, cells, status, exploded, startTime, endTime, flags, newBest;
   let flagMode = false, pressing = -1;
   let cellEls = [];
 
@@ -254,7 +257,7 @@ body {
   function placeMines(first) {
     const avoid = new Set([first, ...neighbours(first)]);
     let pool = cells.map((_, i) => i).filter(i => !avoid.has(i));
-    const m = LEVELS[level].mines;
+    const m = mineCount;
     if (pool.length < m) pool = cells.map((_, i) => i).filter(i => i !== first);
     for (let k = pool.length - 1; k > 0; k--) {
       const j = Math.floor(Math.random() * (k + 1));
@@ -304,11 +307,11 @@ body {
   function checkWin() {
     if (cells.some(c => !c.mine && c.state !== OPEN)) return;
     cells.forEach(c => { if (c.mine) c.state = FLAG; });
-    flags = LEVELS[level].mines;
+    flags = mineCount;
     status = 'won'; endTime = Date.now();
     const t = Math.max(1, elapsed());
     const best = bestTime();
-    if (!best || t < best) { store.set('ms.best.' + level, String(t)); newBest = true; }
+    if (!best || t < best) { store.set(bestKey(), String(t)); newBest = true; }
   }
 
   function lose(i) { exploded = i; status = 'lost'; endTime = Date.now(); buzz(60); }
@@ -333,13 +336,31 @@ body {
     if (!startTime) return 0;
     return Math.min(999, Math.floor(((endTime || Date.now()) - startTime) / 1000));
   }
-  function bestTime() { const v = parseInt(store.get('ms.best.' + level), 10); return v > 0 ? v : null; }
+  const bestKey = () => `ms.best.${level}.${cols}x${rows}`;
+  function bestTime() { const v = parseInt(store.get(bestKey()), 10); return v > 0 ? v : null; }
+
+  // Board size for a level on the current screen.
+  function dims(key) {
+    const L = LEVELS[key];
+    if (L.rows) return { cols: L.cols, rows: L.rows, mines: L.mines };
+    const cell = Math.floor((vp.w - 2 * FRAME) / L.cols);
+    const r = Math.max(L.cols, Math.floor((vp.h - 2 * FRAME) / Math.max(1, cell)));
+    return { cols: L.cols, rows: r, mines: Math.round(L.density * L.cols * r) };
+  }
+
+  function updateLabels() {
+    document.querySelectorAll('#levels button').forEach(b => {
+      const d = dims(b.dataset.level);
+      b.querySelector('small').textContent = `${d.cols}×${d.rows} · ${d.mines}`;
+    });
+  }
   function buzz(ms = 8) { try { navigator.vibrate && navigator.vibrate(ms); } catch {} }
 
   // ---------- setup ----------
   function setLevel(key) {
     level = LEVELS[key] ? key : 'easy';
-    ({ rows, cols } = LEVELS[level]);
+    ({ rows, cols, mines: mineCount } = dims(level));
+    updateLabels();
     store.set('ms.level', level);
     document.querySelectorAll('#levels button').forEach(b =>
       b.setAttribute('aria-pressed', String(b.dataset.level === level)));
@@ -387,7 +408,7 @@ body {
       if (el._cls !== cls) { el.className = cls; el._cls = cls; }
       if (el._txt !== txt) { el.innerHTML = txt; el._txt = txt; }
     }
-    setLed($('mines'), LEVELS[level].mines - flags);
+    setLed($('mines'), mineCount - flags);
     setLed($('timer'), elapsed());
     const faceKey = status === 'won' ? 'cool' : lost ? 'dead' : pressing >= 0 ? 'oh' : 'smile';
     if ($('face')._k !== faceKey) { $('face').innerHTML = faceSVG(faceKey); $('face')._k = faceKey; }
@@ -429,8 +450,13 @@ body {
 
   new ResizeObserver(() => {
     const r = viewport.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return;
     vp = { w: r.width, h: r.height };
-    layout();
+    if (!level) return setLevel(store.get('ms.level') || 'easy');   // first measurement
+    // Refit the board to the screen, but never in the middle of a game.
+    const d = dims(level);
+    if (status === 'ready' && (d.rows !== rows || d.cols !== cols)) setLevel(level);
+    else { updateLabels(); layout(); }
   }).observe(viewport);
 
   function cellAt(x, y) {
@@ -519,7 +545,10 @@ body {
   document.addEventListener('gesturestart', e => e.preventDefault());   // stop Safari page zoom
 
   // ---------- controls ----------
-  $('face').addEventListener('click', newGame);
+  $('face').addEventListener('click', () => {
+    const d = dims(level);
+    if (d.rows !== rows || d.cols !== cols) setLevel(level); else newGame();
+  });
   $('levels').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (b && b.dataset.level !== level) setLevel(b.dataset.level);
@@ -541,7 +570,6 @@ body {
     navigator.serviceWorker.register('sw.js').then(r => r.update()).catch(() => {});
   }
 
-  setLevel(store.get('ms.level') || 'easy');
 })();
 </script>
 
