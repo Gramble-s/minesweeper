@@ -348,6 +348,13 @@ body {
 .btn small { overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 370px) { .actions .btn { font-size: 14px; gap: 4px; } .levels .btn small { font-size: 11px; } }
 
+/* Computers: show which tile the mouse is over, and use a normal cursor. */
+@media (hover: hover) and (pointer: fine) {
+  .viewport { cursor: default; }
+  .c.h:hover { filter: brightness(1.12); }
+  [data-dark="1"] .c.h:hover { filter: brightness(1.3); }
+  .btn, .facebtn { cursor: pointer; }
+}
 @media (prefers-reduced-motion: reduce) { .c.hl { animation: none; } }
 </style>
 
@@ -610,6 +617,7 @@ body {
     };
   })();
   const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
   const isDark = () => DARK_ONLY.has(settings.skin) || settings.mode === 'dark' || (settings.mode === 'system' && darkQuery.matches);
 
   function applySettings() {
@@ -1224,7 +1232,8 @@ body {
     else if (status === 'won') text = assisted() ? `Cleared in ${elapsed()}s with ${help} (not timed)` : `Cleared in ${elapsed()}s${newBest ? ' · new best!' : ''}`;
     else if (lost) text = recoverable ? 'You hit a mine.' : 'Game over. Tap the face to play again.';
     else if (status === 'playing') text = help ? `Using ${help} · not timed` : (noGuessGame ? 'No-guess board' : (best ? `Best: ${best}s` : 'Good luck'));
-    else text = (best ? `Best: ${best}s · ` : '') + (noGuessGame ? 'No-guess · ' : '') + 'Hold to flag · Pinch to zoom';
+    else text = (best ? `Best: ${best}s · ` : '') + (noGuessGame ? 'No-guess · ' : '') +
+      (finePointer.matches ? 'Right-click to flag · Scroll to zoom' : 'Hold to flag · Pinch to zoom');
     if ($('status').textContent !== text) $('status').textContent = text;
   }
 
@@ -1325,6 +1334,7 @@ body {
 
   viewport.addEventListener('pointerdown', e => {
     if (e.target.closest('.unzoom') || !level) return;
+    if (e.pointerType === 'mouse') return mouseDown(e);
     try { viewport.setPointerCapture(e.pointerId); } catch {}
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 1) {
@@ -1346,6 +1356,7 @@ body {
   });
 
   viewport.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse') return mouseMove(e);
     if (!pts.has(e.pointerId)) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (mode === 'press' && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) {
@@ -1366,6 +1377,7 @@ body {
   });
 
   function pointerEnd(e) {
+    if (e.pointerType === 'mouse') return mouseUp(e);
     if (!pts.has(e.pointerId)) return;
     pts.delete(e.pointerId);
     if (mode === 'press' && pts.size === 0) {
@@ -1388,6 +1400,95 @@ body {
   viewport.addEventListener('pointercancel', pointerEnd);
   viewport.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('gesturestart', e => e.preventDefault());   // stop Safari page zoom
+
+  // ---------- mouse (computers) ----------
+  // Left click = dig (release on the tile, like the classic game; slide off to cancel).
+  // Right click = flag, or chord on a number. Middle click or left+right together = chord.
+  // When zoomed in, drag with the left button to pan. No hold-to-flag with a mouse.
+  let m = null, hover = -1;
+
+  function mouseDown(e) {
+    if (e.button === 1) e.preventDefault();               // stop middle-click autoscroll
+    const i = cellAt(e.clientX, e.clientY);
+    if (e.button === 2) {
+      if (m && m.btn === 0) { m.chord = true; setPressing(-1); return; }   // left already held
+      if (i >= 0 && !over() && status !== 'generating') {
+        notice = '';
+        act(i, () => { if (cells[i].state === OPEN) chord(i); else cycleMark(i); });
+      }
+      m = { btn: 2, chord: false };
+      return;
+    }
+    try { viewport.setPointerCapture(e.pointerId); } catch {}
+    if (e.button === 1) { m = { btn: 1, chord: true, cell: i }; return; }
+    if (e.button !== 0) return;
+    if (m && m.btn === 2) { m = { btn: 0, chord: true, cell: i }; return; }       // right already held
+    m = { btn: 0, chord: false, cell: i, x: e.clientX, y: e.clientY, panning: false, o: { ...origin } };
+    setPressing(i);
+  }
+
+  function mouseMove(e) {
+    const i = cellAt(e.clientX, e.clientY);
+    if (!m) { hover = i; return; }
+    if (m.btn === 0 && (e.buttons & 2)) m.chord = true;   // right pressed while left held
+    m.cell = i;
+    if (m.chord) { setPressing(-1); return; }
+    if (m.btn !== 0) return;
+    if (!m.panning && zoom > 1.01 && Math.hypot(e.clientX - m.x, e.clientY - m.y) > 6) {
+      m.panning = true; setPressing(-1);
+    }
+    if (m.panning) layout(1, { x: m.o.x + e.clientX - m.x, y: m.o.y + e.clientY - m.y });
+    else setPressing(i);                                  // the pressed tile follows the mouse
+  }
+
+  function mouseUp(e) {
+    if (!m) return;
+    const i = cellAt(e.clientX, e.clientY);
+    // With a chord, wait until every button is released.
+    if (m.chord && e.buttons) return;
+    pressing = -1;
+    if (m.panning) origin = livePos;
+    else if (m.chord) {
+      if (i >= 0 && !over() && cells[i].state === OPEN) { notice = ''; act(i, () => chord(i)); }
+      else render();
+    } else if (m.btn === 0 && e.type === 'pointerup') tap(i);
+    else render();
+    m = null;
+  }
+  viewport.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = -1; });
+  viewport.addEventListener('mousedown', e => { if (e.button === 1) e.preventDefault(); });
+  viewport.addEventListener('auxclick', e => e.preventDefault());
+
+  // Scroll wheel: zoom around the cursor (also handles trackpad pinch). Shift + wheel pans.
+  viewport.addEventListener('wheel', e => {
+    if (!level) return;
+    e.preventDefault();
+    if (e.shiftKey && !e.ctrlKey) {
+      layout(1, { x: origin.x - (e.deltaX || e.deltaY), y: origin.y });
+      origin = livePos; return;
+    }
+    const step = e.ctrlKey ? Math.exp(-e.deltaY * 0.01) : Math.exp(-Math.sign(e.deltaY) * 0.18);
+    const nz = Math.min(Math.max(zoom * step, 1), MAX_ZOOM);
+    if (nz === zoom) return;
+    const p = local({ x: e.clientX, y: e.clientY }), ratio = nz / zoom;
+    zoom = nz;
+    origin = { x: p.x - (p.x - origin.x) * ratio, y: p.y - (p.y - origin.y) * ratio };
+    layout();
+  }, { passive: false });
+
+  // Keyboard: Space or F flags the tile under the mouse, N or F2 starts a new game.
+  document.addEventListener('keydown', e => {
+    if (!$('sheet').hidden || !$('statsSheet').hidden || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.closest && e.target.closest('input, textarea')) return;
+    const k = e.key.toLowerCase();
+    if ((k === ' ' || k === 'f') && hover >= 0) {
+      e.preventDefault();
+      if (!over() && status !== 'generating') {
+        notice = '';
+        act(hover, () => { if (cells[hover].state === OPEN) chord(hover); else cycleMark(hover); });
+      }
+    } else if (k === 'n' || e.key === 'F2') { e.preventDefault(); restart(); }
+  });
 
   // Pause when the app goes to the background, resume when it comes back.
   document.addEventListener('visibilitychange', () => {
