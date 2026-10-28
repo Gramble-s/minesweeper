@@ -149,9 +149,9 @@ body {
 }
 .desk {
   height: 100%; box-sizing: border-box;
-  padding-block: 10px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 6px;
+  padding-left: max(6px, env(safe-area-inset-left, 0px));
+  padding-right: max(6px, env(safe-area-inset-right, 0px));
   display: flex; flex-direction: column; align-items: center;
 }
 .desk.lowered {
@@ -164,11 +164,33 @@ body {
 .desk.lowered .body { gap: 6px; padding: 4px 4px 5px; }
 .desk.lowered .panel { padding: 4px 8px; }
 
+/* Wide screens (computers, tablets and phones held sideways): controls in a
+   sidebar on the left, the board fills the rest. */
+.desk.wide { padding-block: 8px; padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px)); }
+.desk.wide .window { max-width: none; }
+.desk.wide .body {
+  display: grid; grid-template-columns: clamp(200px, 24vw, 270px) minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto; gap: 8px 10px;
+}
+.desk.wide .panel { grid-column: 1; grid-row: 1; }
+.desk.wide .levels { grid-column: 1; grid-row: 2; grid-template-columns: 1fr 1fr; }
+.desk.wide .statusbar { grid-column: 1; grid-row: 3; flex-direction: column; }
+.desk.wide .statusbar .st { white-space: normal; line-height: 1.35; }
+.desk.wide .actions { grid-column: 1; grid-row: 5; grid-template-columns: 1fr; }
+.desk.wide .viewport { grid-column: 2; grid-row: 1 / -1; }
+@media (max-height: 520px) {
+  /* phone held sideways: keep the sidebar short */
+  .desk.wide .actions { grid-template-columns: repeat(3, 1fr); }
+  .desk.wide .actions .btn span:not([id$="Icon"]) { display: none; }
+  .desk.wide .levels .btn small { display: none; }
+  .desk.wide .panel { padding: 3px 6px; }
+}
+
 /* ===== Base (Classic) ===== */
 .raised { border: 2px solid; border-color: var(--hi) var(--lo) var(--lo) var(--hi); }
 .sunken { border: 2px solid; border-color: var(--lo) var(--hi) var(--hi) var(--lo); }
 .window {
-  width: 100%; max-width: 560px; height: 100%; box-sizing: border-box;
+  width: 100%; max-width: 720px; height: 100%; box-sizing: border-box;
   background: var(--win); color: var(--fg);
   border: 2px solid; border-color: var(--win) var(--dk) var(--dk) var(--win);
   box-shadow: inset 1px 1px 0 var(--hi), inset -1px -1px 0 var(--lo);
@@ -455,6 +477,15 @@ body {
         </div>
         <div class="opt-hint" id="modeNote" hidden>This theme is always dark.</div>
       </div>
+      <div>
+        <div class="opt-label">Tile size</div>
+        <div class="stepper">
+          <button class="btn" id="scaleMinus" aria-label="Smaller tiles">−</button>
+          <div class="val sunken" id="scaleVal">100%</div>
+          <button class="btn" id="scalePlus" aria-label="Bigger tiles">+</button>
+        </div>
+        <div class="opt-hint" id="scaleHint">Bigger tiles mean fewer of them. Medium, Hard and Custom boards fill the screen at this size. On a computer, press + or − to change it.</div>
+      </div>
 
       <div class="sect">Gameplay</div>
       <div>
@@ -510,21 +541,13 @@ body {
 
       <div class="sect">Custom board</div>
       <div>
-        <div class="opt-label">Columns</div>
-        <div class="stepper">
-          <button class="btn" id="colsMinus" aria-label="Fewer columns">−</button>
-          <div class="val sunken" id="colsVal">10</div>
-          <button class="btn" id="colsPlus" aria-label="More columns">+</button>
-        </div>
-      </div>
-      <div>
         <div class="opt-label">Mines</div>
         <div class="stepper">
           <button class="btn" id="pctMinus" aria-label="Fewer mines">−</button>
           <div class="val sunken" id="pctVal">18%</div>
           <button class="btn" id="pctPlus" aria-label="More mines">+</button>
         </div>
-        <div class="opt-hint" id="customHint">Rows fill the screen. Easy is about 12%, Medium 16%, Hard 21%.</div>
+        <div class="opt-hint" id="customHint">The board fills the screen. Easy is about 12%, Medium 16%, Hard 21%.</div>
       </div>
 
       <div class="sect">Layout</div>
@@ -563,12 +586,15 @@ body {
   // ---------- constants ----------
   // Easy is the classic fixed 9×9. Medium/Hard/Custom set the columns and mine density;
   // rows fill the screen so cells stay a usable size.
+  // `tiles` is the board size on a phone-sized screen at 100% tile size; bigger screens get
+  // somewhat more tiles (not proportionally more, so tiles also grow).
   const LEVELS = {
     easy:   { name: 'Easy',   cols: 9, rows: 9, mines: 10 },
-    medium: { name: 'Medium', cols: 12, density: 40 / 256 },
-    hard:   { name: 'Hard',   cols: 14, density: 99 / 480 },
-    custom: { name: 'Custom' },
+    medium: { name: 'Medium', tiles: 210, density: 40 / 256 },
+    hard:   { name: 'Hard',   tiles: 290, density: 99 / 480 },
+    custom: { name: 'Custom', tiles: 250 },
   };
+  const PHONE_AREA = 370 * 500;
   const ORDER = ['easy', 'medium', 'hard', 'custom'];
   const HIDDEN = 0, FLAG = 1, OPEN = 2, QUEST = 3;
   const MAX_ZOOM = 4;
@@ -612,7 +638,7 @@ body {
       qmarks: saved.qmarks === true,
       sound: saved.sound === true,
       hold: pick(saved.hold, v => [200, 300, 450, 600].includes(v), 300),
-      ccols: pick(saved.ccols, v => Number.isInteger(v) && v >= 5 && v <= 30, 10),
+      scale: pick(saved.scale, v => Number.isInteger(v) && v >= 60 && v <= 200, 100),
       cpct: pick(saved.cpct, v => Number.isInteger(v) && v >= 8 && v <= 30, 18),
     };
   })();
@@ -645,7 +671,7 @@ body {
       b.setAttribute('aria-pressed', String(v === b.dataset.val));
     });
     $('recVal').textContent = settings.rec === Infinity ? '∞' : settings.rec === 0 ? 'Off' : String(settings.rec);
-    $('colsVal').textContent = String(settings.ccols);
+    $('scaleVal').textContent = settings.scale + '%';
     $('pctVal').textContent = settings.cpct + '%';
     if (level) { updateLabels(); render(); }
   }
@@ -1110,12 +1136,25 @@ body {
   function dims(key) {
     const L = LEVELS[key];
     if (L.rows) return { cols: L.cols, rows: L.rows, mines: L.mines };
-    const c = key === 'custom' ? settings.ccols : L.cols;
     const density = key === 'custom' ? settings.cpct / 100 : L.density;
-    const cell = Math.floor((vp.w - 2 * FRAME) / c);
-    const r = Math.max(5, Math.floor((vp.h - 2 * FRAME) / Math.max(1, cell)));
+    const W = Math.max(100, vp.w - 2 * FRAME), H = Math.max(100, vp.h - 2 * FRAME), area = W * H;
+    const scale = settings.scale / 100;
+    const tiles = L.tiles * Math.pow(Math.max(1, area / PHONE_AREA), 0.35) / (scale * scale);
+    const minCell = finePointer.matches ? 16 : 22;
+    const cell = Math.max(minCell, Math.sqrt(area / tiles));
+    const c = Math.max(5, Math.min(60, Math.floor(W / cell)));
+    const r = Math.max(5, Math.min(60, Math.floor(H / cell)));
     const m = Math.max(1, Math.min(c * r - 9, Math.round(density * c * r)));
     return { cols: c, rows: r, mines: m };
+  }
+
+  function changeScale(delta) {
+    const next = Math.min(200, Math.max(60, settings.scale + delta));
+    if (next === settings.scale) return;
+    settings.scale = next;
+    saveSettings();
+    if (status === 'ready') setLevelNoAbandon(level);
+    else if (LEVELS[level].tiles) { notice = `Tile size ${next}%. It applies from your next game.`; render(); }
   }
 
   function updateLabels() {
@@ -1280,7 +1319,7 @@ body {
   let zoom = 1, origin = { x: 0, y: 0 }, vp = { w: 0, h: 0 }, livePos = { x: 0, y: 0 };
   const FRAME = 4;   // room for the frame around the field
 
-  const baseCell = () => Math.max(1, Math.floor(Math.min((vp.w - 2 * FRAME) / cols, (vp.h - 2 * FRAME) / rows)));
+  const baseCell = () => Math.max(1, Math.min(80, Math.floor(Math.min((vp.w - 2 * FRAME) / cols, (vp.h - 2 * FRAME) / rows))));
   const laidSize = z => { const s = baseCell() * z; return { w: s * cols, h: s * rows }; };
 
   function clamp(p, size) {
@@ -1488,6 +1527,8 @@ body {
         act(hover, () => { if (cells[hover].state === OPEN) chord(hover); else cycleMark(hover); });
       }
     } else if (k === 'n' || e.key === 'F2') { e.preventDefault(); restart(); }
+    else if (e.key === '+' || e.key === '=') { e.preventDefault(); changeScale(10); }
+    else if (e.key === '-' || e.key === '_') { e.preventDefault(); changeScale(-10); }
   });
 
   // Pause when the app goes to the background, resume when it comes back.
@@ -1550,8 +1591,8 @@ body {
     saveSettings();
     if (level === 'custom' && status === 'ready') setLevelNoAbandon('custom');
   };
-  $('colsMinus').addEventListener('click', step('ccols', -1, 5, 30));
-  $('colsPlus').addEventListener('click', step('ccols', 1, 5, 30));
+  $('scaleMinus').addEventListener('click', () => changeScale(-10));
+  $('scalePlus').addEventListener('click', () => changeScale(10));
   $('pctMinus').addEventListener('click', step('cpct', -1, 8, 30));
   $('pctPlus').addEventListener('click', step('cpct', 1, 8, 30));
   $('recMinus').addEventListener('click', () => {
@@ -1560,6 +1601,15 @@ body {
   $('recPlus').addEventListener('click', () => {
     settings.rec = settings.rec === Infinity || settings.rec >= 99 ? Infinity : settings.rec + 1; saveSettings();
   });
+
+  // Wide layout when the screen is clearly landscape and big enough for a sidebar.
+  function fitLayout() {
+    const wide = innerWidth > innerHeight * 1.1 && innerWidth >= 600;
+    $('desk').classList.toggle('wide', wide);
+  }
+  fitLayout();
+  addEventListener('resize', fitLayout);
+  finePointer.addEventListener?.('change', () => { if (level && status === 'ready') setLevelNoAbandon(level); });
 
   applySettings();
 

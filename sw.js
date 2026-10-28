@@ -1,6 +1,6 @@
 // Online: always load the latest page (and refresh the offline copy).
 // Offline: fall back to the saved copy.
-const CACHE = 'minesweeper-v8';
+const CACHE = 'minesweeper-v9';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
